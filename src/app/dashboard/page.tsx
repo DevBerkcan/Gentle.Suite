@@ -17,9 +17,9 @@ export default function DashboardPage() {
   const loadData = () => {
     api.kpis().then(d => { setKpis(d); setLastRefresh(new Date()); }).catch(() => {});
     api.finance().then(setFinance).catch(() => {});
-    api.allSubs().then((list: any[]) => {
+/*     api.allSubs().then((list: any[]) => {
       setPendingSubCount((list || []).filter((s: any) => s.status === "PendingConfirmation").length);
-    }).catch(() => {});
+    }).catch(() => {}); */
     api.invoices("status=Overdue&pageSize=5").then((d: any) => setOverdueInvoices(d?.items || [])).catch(() => {});
     api.recentActivity(8).then(setRecentActivity).catch(() => {});
   };
@@ -48,7 +48,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="space-y-2 mb-6">
+{/*       <div className="space-y-2 mb-6">
         {pendingSubCount > 0 && (
           <Link href="/subscriptions" className="flex items-center justify-between bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded-xl text-sm hover:bg-orange-100 transition-colors">
             <span className="font-semibold">⚠ {pendingSubCount} Abonnement{pendingSubCount > 1 ? "s warten" : " wartet"} auf Bestätigung</span>
@@ -67,7 +67,7 @@ export default function DashboardPage() {
             <span>→ Angebote prüfen</span>
           </Link>
         )}
-      </div>
+      </div> */}
 
       {kpis && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -76,7 +76,7 @@ export default function DashboardPage() {
             { label: "Offene Angebote", value: kpis.openQuotes, color: "text-warning" },
             { label: "Ueberfaellige Rechnungen", value: kpis.overdueInvoices, color: "text-danger" },
             { label: "Monatl. Umsatz (MRR)", value: `${kpis.monthlyRecurringRevenue?.toFixed(0)} EUR`, color: "text-success" },
-            { label: "Aktive Abonnements", value: kpis.activeSubscriptions, color: "text-primary" },
+            //{ label: "Aktive Abonnements", value: kpis.activeSubscriptions, color: "text-primary" },
             { label: "Offene Onboardings", value: kpis.openOnboardings, color: "text-blue-700" },
             { label: "Ueberfaellige Aufgaben", value: kpis.overdueTasks, color: "text-danger" },
           ].map((kpi, i) => (

@@ -294,9 +294,9 @@ updateExpense: (id: string, data: any) => {
 },
 
   // Subscriptions
-  plans: () => apiFetch<any>("/subscriptions/plans"),
-  customerSubs: (cid: string) => apiFetch<CustomerSubscription[]>(`/subscriptions/customer/${cid}`).then((list) => Array.isArray(list) ? list.map(normalizeSubscription) : list),
-  createSub: (data: any) => apiFetch<CustomerSubscription>("/subscriptions", { method: "POST", body: JSON.stringify(data) }).then(normalizeSubscription),
+  //plans: () => apiFetch<any>("/subscriptions/plans"),
+  //customerSubs: (cid: string) => apiFetch<CustomerSubscription[]>(`/subscriptions/customer/${cid}`).then((list) => Array.isArray(list) ? list.map(normalizeSubscription) : list),
+  //createSub: (data: any) => apiFetch<CustomerSubscription>("/subscriptions", { method: "POST", body: JSON.stringify(data) }).then(normalizeSubscription),
   // Services
   services: () => apiFetch<ServiceCategory[]>("/servicecatalog").then((list) => Array.isArray(list) ? list.map(normalizeServiceCategory) : list),
   deleteServiceCategory: (id: string) => apiFetch<any>(`/servicecatalog/categories/${id}`, { method: "DELETE" }),
@@ -396,15 +396,15 @@ deleteServiceItem: (id: string) =>
   addProjectMember: (id: string, teamMemberId: string) => apiFetch<any>(`/projects/${id}/members/${teamMemberId}`, { method: "POST" }),
   removeProjectMember: (id: string, teamMemberId: string) => apiFetch<any>(`/projects/${id}/members/${teamMemberId}`, { method: "DELETE" }),
   // Subscriptions (all)
-  allSubs: () => apiFetch<CustomerSubscription[]>("/subscriptions").then((list) => Array.isArray(list) ? list.map(normalizeSubscription) : list),
-  updateSubStatus: (id: string, data: any) => apiFetch<any>(`/subscriptions/${id}/status`, { method: "PUT", body: JSON.stringify(data) }),
-  confirmSub: (id: string) => apiFetch<any>(`/subscriptions/${id}/confirm`, { method: "POST" }),
-  subscriptionInvoices: (id: string) => apiFetch<any>(`/subscriptions/${id}/invoices`),
-  createPlan: (data: any) => apiFetch<any>("/subscriptions/plans", { method: "POST", body: JSON.stringify(data) }),
-  updatePlan: (id: string, data: any) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  //allSubs: () => apiFetch<CustomerSubscription[]>("/subscriptions").then((list) => Array.isArray(list) ? list.map(normalizeSubscription) : list),
+  //updateSubStatus: (id: string, data: any) => apiFetch<any>(`/subscriptions/${id}/status`, { method: "PUT", body: JSON.stringify(data) }),
+  //confirmSub: (id: string) => apiFetch<any>(`/subscriptions/${id}/confirm`, { method: "POST" }),
+  //subscriptionInvoices: (id: string) => apiFetch<any>(`/subscriptions/${id}/invoices`),
+  //createPlan: (data: any) => apiFetch<any>("/subscriptions/plans", { method: "POST", body: JSON.stringify(data) }),
+  //updatePlan: (id: string, data: any) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deletePlan: (id: string) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "DELETE" }),
-  triggerSubscriptionInvoices: () => apiFetch<void>("/system/trigger-subscription-invoices", { method: "POST" }),
-  triggerBankSync: () => apiFetch<void>("/system/trigger-bank-sync", { method: "POST" }),
+  //triggerSubscriptionInvoices: () => apiFetch<void>("/system/trigger-subscription-invoices", { method: "POST" }),
+  //triggerBankSync: () => apiFetch<void>("/system/trigger-bank-sync", { method: "POST" }),
   // Integrations (PayPal + GoCardless / Fyrst)
   integrationSettings: () => apiFetch<any>("/integrations"),
   updatePayPal: (data: any) => apiFetch<void>("/integrations/paypal", { method: "PUT", body: JSON.stringify(data) }),

@@ -263,20 +263,20 @@ const save = async () => {
         return s + (base - disc);
       }, 0);
 
-      const plan = await api.createPlan({
+/*       const plan = await api.createPlan({
         name: recurringLines[0].title,
         description: recurringLines.map((l: any) => l.description || l.title).join("\n"),
         monthlyPrice,
         billingCycle: "Monthly",
         isActive: true,
-      });
+      }); */
 
-      await api.createSub({
+/*       await api.createSub({
         customerId: form.customerId,
         planId: plan.id,
         startDate: new Date().toISOString(),
         nextBillingDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      });
+      }); */
     }
 
     clearForm();
