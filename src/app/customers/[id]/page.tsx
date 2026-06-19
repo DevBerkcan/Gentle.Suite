@@ -12,7 +12,7 @@ export default function CustomerDetailPage() {
   const [customer, setCustomer] = useState<any>(null);
   const [notes, setNotes] = useState<any[]>([]);
   const [activities, setActivities] = useState<any>(null);
-  //const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [tab, setTab] = useState<Tab>("overview");
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState<any>({});
@@ -62,7 +62,7 @@ export default function CustomerDetailPage() {
     loadCustomer();
     loadNotes();
     loadActivity();
-    //loadSubscriptions();
+    loadSubscriptions();
     loadWorkflows();
     loadPriceLists();
     loadOpportunities();
@@ -80,7 +80,7 @@ export default function CustomerDetailPage() {
   const loadCustomer = () => api.customer(id).then((c) => { setCustomer(c); setReminderStop(!!c.reminderStop); }).catch(() => setError("Kunde nicht gefunden"));
   const loadNotes = () => api.notes(id).then(setNotes).catch(() => {});
   const loadActivity = () => api.activity(id).then(setActivities).catch(() => {});
-  //const loadSubscriptions = () => api.customerSubs(id).then(setSubscriptions).catch(() => {});
+  const loadSubscriptions = () => api.customerSubs(id).then(setSubscriptions).catch(() => {});
   const loadWorkflows = () => api.onboarding(id).then(setWorkflows).catch(() => {});
   const loadPriceLists = () => api.priceLists(id).then(setPriceLists).catch(() => {});
   const loadOpportunities = () => api.opportunities(`customerId=${id}`).then(setOpportunities).catch(() => {});
@@ -405,7 +405,8 @@ export default function CustomerDetailPage() {
             ))}
           </div>
 
-{/*           <div className="bg-surface rounded-xl border border-border p-5">
+          {/* Subscriptions */}
+          <div className="bg-surface rounded-xl border border-border p-5">
             <h2 className="font-semibold mb-4">Abonnements</h2>
             {subscriptions.length === 0 ? (
               <p className="text-sm text-muted">Keine Abonnements</p>
@@ -422,7 +423,7 @@ export default function CustomerDetailPage() {
                 ))}
               </div>
             )}
-          </div> */}
+          </div>
         </div>
       )}
 

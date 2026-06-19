@@ -17,7 +17,7 @@ const mainNav: NavItem[] = [
   { href: "/invoices", label: "Rechnungen", icon: Receipt },
   { href: "/expenses", label: "Ausgaben", icon: Wallet },
   { href: "/projects", label: "Projekte", icon: FolderKanban },
-  //{ href: "/subscriptions", label: "Serienrechnungen", icon: RefreshCw },
+  { href: "/subscriptions", label: "Serienrechnungen", icon: RefreshCw },
   { href: "/time", label: "Zeiterfassung", icon: Clock },
   { href: "/calendar", label: "Kalender", icon: CalendarDays },
   { href: "/reports", label: "Berichte", icon: BarChart2 },
