@@ -43,7 +43,6 @@ export default function InvoiceDetailPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [initialSnapshot, setInitialSnapshot] = useState("");
-  const [reminderStop, setReminderStop] = useState(false);
   const [xmlDownloading, setXmlDownloading] = useState(false);
 
 async function handlePdfDownload() {
@@ -65,7 +64,6 @@ async function handlePdfDownload() {
     try {
       const inv = await api.invoice(id);
       setInvoice(inv);
-      setReminderStop(!!inv.reminderStop);
       const nextForm = {
         subject: inv.subject || "",
         introText: inv.introText || "",
@@ -219,18 +217,6 @@ async function handlePdfDownload() {
     finally { setXmlDownloading(false); }
   }
 
-  async function handleToggleReminderStop() {
-    const next = !reminderStop;
-    try {
-      await api.setInvoiceReminderStop(id, next);
-      setReminderStop(next);
-      setSuccess(next ? "Mahnstopp aktiviert" : "Mahnstopp deaktiviert");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (e: any) {
-      setError(e?.message || "Mahnstopp konnte nicht aktualisiert werden");
-    }
-  }
-
   if (error && !invoice) return (
     <div className="p-8">
       <div className="bg-red-50 text-danger p-4 rounded-xl">{error}</div>
@@ -266,9 +252,6 @@ async function handlePdfDownload() {
 <button onClick={handlePdfDownload} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">
   {invoiceStatus === "Draft" ? "Vorschau PDF" : "PDF"}
 </button>
-          <button onClick={handleToggleReminderStop} className={`px-4 py-2 border rounded-lg text-sm font-medium ${reminderStop ? "border-warning text-warning hover:bg-yellow-50" : "border-border hover:bg-background"}`}>
-            {reminderStop ? "Mahnstopp aktiv" : "Mahnstopp"}
-          </button>
           {invoiceStatus === "Draft" && (
             <>
               {editing ? (
@@ -282,13 +265,11 @@ async function handlePdfDownload() {
               <button onClick={handleFinalize} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium" disabled={editing && hasUnsavedChanges}>Senden</button>
             </>
           )}
-          {(invoiceStatus === "Final" || invoiceStatus === "Open" || invoiceStatus === "Overdue") && (
-            <>
-              <button onClick={handleSend} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>
-              <button onClick={() => { setPaymentForm({ ...paymentForm, amount: openAmount }); setShowPayment(true); }} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">Zahlung erfassen</button>
-              <button onClick={handleCancel} className="px-4 py-2 border border-danger text-danger rounded-lg text-sm font-medium hover:bg-red-50">Storno</button>
-            </>
+          {(invoiceStatus === "Final" || invoiceStatus === "Sent" || invoiceStatus === "Open" || invoiceStatus === "Overdue") && (
+            <button onClick={handleSend} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>
           )}
+          <button onClick={() => { setPaymentForm({ ...paymentForm, amount: openAmount }); setShowPayment(true); }} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">Zahlung erfassen</button>
+          <button onClick={handleCancel} className="px-4 py-2 border border-danger text-danger rounded-lg text-sm font-medium hover:bg-red-50">Storno</button>
         </div>
       </div>
 
@@ -311,7 +292,6 @@ async function handlePdfDownload() {
               <div className="flex justify-between"><span className="text-muted">Rechnungsdatum</span><span>{new Date(invoice.invoiceDate).toLocaleDateString("de")}</span></div>
               <div className="flex justify-between"><span className="text-muted">Faellig</span><span>{new Date(invoice.dueDate).toLocaleDateString("de")}</span></div>
               <div className="flex justify-between"><span className="text-muted">Steuermodus</span><span>{invoiceTaxMode}</span></div>
-              <div className="flex justify-between"><span className="text-muted">Mahnwesen</span><span>{reminderStop ? "Gestoppt" : "Aktiv"}</span></div>
               {invoice.isFinalized && <div className="flex justify-between"><span className="text-muted">Finalisiert</span><span>{new Date(invoice.finalizedAt).toLocaleDateString("de")}</span></div>}
             </div>
           )}

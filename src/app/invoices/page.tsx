@@ -48,7 +48,9 @@ export default function InvoicesPage() {
   const [saving, setSaving] = useState(false);
   const [statusFilter, setStatusFilter] = useState("");
   const [xmlDownloading, setXmlDownloading] = useState<string | null>(null);
-  const [reminderSending, setReminderSending] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [payingInvoice, setPayingInvoice] = useState<any | null>(null);
+  const [listPaymentForm, setListPaymentForm] = useState({ amount: 0, paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "BankTransfer", reference: "", note: "" });
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -252,8 +254,6 @@ const save = async () => {
 
     const inv = await api.createInvoice(req);
 
-    await api.finalizeInvoice(inv.id, { sendEmail: false });
-
     const recurringLines = validLines.filter((l: any) => l.lineType === "RecurringMonthly");
 
     if (recurringLines.length > 0) {
@@ -335,18 +335,34 @@ const save = async () => {
     }
   };
 
-  const handleReminder = async (id: string, e: React.MouseEvent) => {
+  const handleCancelFromList = async (inv: any, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Mahnungs-E-Mail an den Kunden senden?")) return;
-    setReminderSending(id);
+    if (!confirm(`Storno für Rechnung ${inv.invoiceNumber} erstellen?`)) return;
+    setCancellingId(inv.id);
     try {
-      await api.sendInvoiceReminder(id);
-      setSuccess("Mahnung wurde gesendet.");
+      await api.cancelInvoice(inv.id, { reason: "Stornierung" });
+      setSuccess("Storno-Rechnung erstellt.");
       setTimeout(() => setSuccess(""), 4000);
+      load(statusFilter, page);
     } catch {
-      setError("Mahnung konnte nicht gesendet werden.");
+      setError("Stornierung fehlgeschlagen.");
     } finally {
-      setReminderSending(null);
+      setCancellingId(null);
+    }
+  };
+
+  const handleListPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!payingInvoice) return;
+    try {
+      await api.recordPayment(payingInvoice.id, listPaymentForm);
+      setPayingInvoice(null);
+      setListPaymentForm({ amount: 0, paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "BankTransfer", reference: "", note: "" });
+      setSuccess("Zahlung erfasst.");
+      setTimeout(() => setSuccess(""), 4000);
+      load(statusFilter, page);
+    } catch {
+      setError("Zahlung konnte nicht erfasst werden.");
     }
   };
 
@@ -435,7 +451,7 @@ const save = async () => {
               <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
               <th className="px-4 py-3 text-right text-xs text-muted">Brutto</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Faellig</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Dokumente</th>
+              <th className="px-4 py-3 text-left text-xs text-muted">Aktionen</th>
             </tr>
           </thead>
           <tbody>
@@ -480,7 +496,7 @@ const save = async () => {
                 <td className="px-4 py-3 text-sm text-muted">
                   {new Date(i.dueDate).toLocaleDateString("de")}
                 </td>
-                <td className="px-4 py-3 flex items-center gap-3">
+                <td className="px-4 py-3 flex items-center gap-2 flex-wrap">
                   <button
                     onClick={(e) => handlePdfDownload(i.id, e)}
                     className="text-primary text-sm hover:underline"
@@ -496,13 +512,21 @@ const save = async () => {
                       {xmlDownloading === i.id ? "…" : "XML"}
                     </button>
                   )}
-                  {(i.status === "Overdue" || i.status === "Open" || i.status === "Sent") && (
+                  {i.status !== "Cancelled" && (
                     <button
-                      onClick={(e) => handleReminder(i.id, e)}
-                      disabled={reminderSending === i.id}
-                      className="text-xs px-2 py-1 bg-orange-50 text-orange-700 rounded-full hover:bg-orange-100 disabled:opacity-50"
+                      onClick={(e) => { e.stopPropagation(); setListPaymentForm({ amount: i.grossTotal ?? 0, paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "BankTransfer", reference: "", note: "" }); setPayingInvoice(i); }}
+                      className="text-xs px-2 py-1 bg-green-50 text-success rounded-full hover:bg-green-100"
                     >
-                      {reminderSending === i.id ? "…" : "Mahnung"}
+                      Zahlung
+                    </button>
+                  )}
+                  {i.status !== "Cancelled" && (
+                    <button
+                      onClick={(e) => handleCancelFromList(i, e)}
+                      disabled={cancellingId === i.id}
+                      className="text-xs px-2 py-1 bg-red-50 text-danger rounded-full hover:bg-red-100 disabled:opacity-50"
+                    >
+                      {cancellingId === i.id ? "…" : "Storno"}
                     </button>
                   )}
                 </td>
@@ -544,6 +568,43 @@ const save = async () => {
             >
               Weiter →
             </button>
+          </div>
+        </div>
+      )}
+
+      {payingInvoice && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setPayingInvoice(null)}>
+          <div className="bg-surface rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-1">Zahlung erfassen</h2>
+            <p className="text-sm text-muted mb-4">{payingInvoice.invoiceNumber} · {payingInvoice.customerName}</p>
+            <form onSubmit={handleListPayment} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Betrag (EUR) *</label>
+                <input required type="number" step="0.01" value={listPaymentForm.amount} onChange={e => setListPaymentForm({ ...listPaymentForm, amount: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Datum *</label>
+                <input required type="date" value={listPaymentForm.paymentDate} onChange={e => setListPaymentForm({ ...listPaymentForm, paymentDate: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Zahlungsart</label>
+                <select value={listPaymentForm.paymentMethod} onChange={e => setListPaymentForm({ ...listPaymentForm, paymentMethod: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg">
+                  <option value="BankTransfer">Ueberweisung</option>
+                  <option value="Cash">Bar</option>
+                  <option value="CreditCard">Kreditkarte</option>
+                  <option value="PayPal">PayPal</option>
+                  <option value="Other">Sonstige</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Referenz</label>
+                <input value={listPaymentForm.reference} onChange={e => setListPaymentForm({ ...listPaymentForm, reference: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg" />
+              </div>
+              <div className="flex gap-2 pt-2">
+                <button type="submit" className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">Zahlung erfassen</button>
+                <button type="button" onClick={() => setPayingInvoice(null)} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button>
+              </div>
+            </form>
           </div>
         </div>
       )}
@@ -879,11 +940,12 @@ const save = async () => {
                         </div>
                       </div>
                       <div className="px-3 pb-2">
-                        <input
+                        <textarea
                           value={l.description}
                           onChange={(e) => updateLine(idx, "description", e.target.value)}
                           placeholder="Beschreibung (optional)"
-                          className="w-full border border-border rounded px-2 py-1.5 text-xs bg-background text-muted"
+                          rows={3}
+                          className="w-full border border-border rounded px-2 py-1.5 text-xs bg-background text-muted resize-y"
                         />
                       </div>
                     </div>

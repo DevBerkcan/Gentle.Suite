@@ -19,7 +19,6 @@ import type {
   QuoteListItem,
   QuoteVersion,
   QuoteTemplate,
-  ReminderSettings,
   ServiceCategory,
   TeamMember,
 } from "@/types/api";
@@ -240,7 +239,6 @@ export const api = {
   finalizeInvoice: (id: string, data: any) => apiFetch<InvoiceDetail>(`/invoices/${id}/finalize`, { method: "POST", body: JSON.stringify(data) }).then(normalizeInvoice),
   recordPayment: (id: string, data: any) => apiFetch<InvoiceDetail>(`/invoices/${id}/payment`, { method: "POST", body: JSON.stringify(data) }).then(normalizeInvoice),
   cancelInvoice: (id: string, data: any) => apiFetch<InvoiceDetail>(`/invoices/${id}/cancel`, { method: "POST", body: JSON.stringify(data) }).then(normalizeInvoice),
-  setInvoiceReminderStop: (id: string, reminderStop: boolean) => apiFetch<any>(`/invoices/${id}/reminder-stop`, { method: "PUT", body: JSON.stringify({ reminderStop }) }),
   sendInvoice: (id: string) => apiFetch<any>(`/invoices/${id}/send`, { method: "POST" }),
   invoicePdf: (id: string) => `${API}/api/invoices/${id}/pdf`,
   invoiceXml: async (id: string) => {
@@ -361,8 +359,6 @@ deleteServiceItem: (id: string) =>
   // Settings
   settings: () => apiFetch<any>("/settings"),
   updateSettings: (data: any) => apiFetch<any>("/settings", { method: "PUT", body: JSON.stringify(data) }),
-  reminderSettings: () => apiFetch<ReminderSettings>("/settings/reminders"),
-  updateReminderSettings: (data: ReminderSettings) => apiFetch<ReminderSettings>("/settings/reminders", { method: "PUT", body: JSON.stringify(data) }),
   numberRanges: (year?: number) => apiFetch<NumberRange[]>(`/settings/number-ranges${year ? `?year=${year}` : ""}`),
   updateNumberRange: (data: NumberRange) => apiFetch<NumberRange>("/settings/number-ranges", { method: "PUT", body: JSON.stringify(data) }),
   importCustomersCsv: async (file: File) => {
@@ -415,7 +411,7 @@ deleteServiceItem: (id: string) =>
   syncIntegrations: () => apiFetch<void>("/integrations/sync", { method: "POST" }),
   createCustomerQuick: (data: { email: string; companyName?: string }) => apiFetch<any>("/customers/quick", { method: "POST", body: JSON.stringify(data) }),
   getIntake: (token: string) => fetch(`${API}/api/intake/${token}`).then(r => r.ok ? r.json() : Promise.reject()),
-  submitIntake: (token: string, data: any) => fetch(`${API}/api/intake/${token}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }),
+  submitIntake: (token: string, data: any) => fetch(`${API}/api/intake/${token}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data) }).then(r => { if (!r.ok) throw new Error("Fehler beim Speichern der Daten."); }),
   resendIntake: (id: string) => apiFetch<void>(`/customers/${id}/resend-intake`, { method: "POST" }),
   sendCustomerEmail: (id: string, data: any) => apiFetch<void>(`/customers/${id}/send-email`, { method: "POST", body: JSON.stringify(data) }),
   // Time Tracking
@@ -425,7 +421,6 @@ deleteServiceItem: (id: string) =>
   deleteTimeEntry: (id: string) => apiFetch<any>(`/timetracking/${id}`, { method: "DELETE" }),
   timeSummary: (from: string, to: string, projectId?: string) => apiFetch<any>(`/timetracking/summary?from=${from}&to=${to}${projectId ? `&projectId=${projectId}` : ""}`),
   createInvoiceFromTimeEntries: (data: any) => apiFetch<any>("/invoices/from-time-entries", { method: "POST", body: JSON.stringify(data) }),
-  sendInvoiceReminder: (id: string) => apiFetch<void>(`/invoices/${id}/send-reminder`, { method: "POST" }),
   recentActivity: (limit = 10) => apiFetch<any[]>(`/activity/recent?limit=${limit}`),
   exportInvoicesCsv: (status?: string) => `${API}/api/invoices/export.csv${status ? `?status=${status}` : ""}`,
   exportCustomersCsv: (status?: string) => `${API}/api/customers/export.csv${status ? `?status=${status}` : ""}`,

@@ -4,7 +4,6 @@ import { api } from "@/lib/api";
 
 export default function SettingsPage() {
   const [form, setForm] = useState<any>(null);
-  const [reminders, setReminders] = useState<any>(null);
   const [numberYear, setNumberYear] = useState(new Date().getFullYear());
   const [numberRanges, setNumberRanges] = useState<any[]>([]);
   const [error, setError] = useState("");
@@ -24,7 +23,6 @@ export default function SettingsPage() {
 
   useEffect(() => {
     api.settings().then(setForm).catch(() => setError("Einstellungen konnten nicht geladen werden"));
-    api.reminderSettings().then(setReminders).catch(() => setError("Mahnlauf-Einstellungen konnten nicht geladen werden"));
     loadIntegration();
   }, [loadIntegration]);
 
@@ -40,18 +38,6 @@ export default function SettingsPage() {
       setSuccess("Einstellungen gespeichert");
       setTimeout(() => setSuccess(""), 3000);
     } catch { setError("Fehler beim Speichern"); }
-  }
-
-  async function handleSaveReminders(e: React.FormEvent) {
-    e.preventDefault();
-    try {
-      const updated = await api.updateReminderSettings(reminders);
-      setReminders(updated);
-      setSuccess("Mahnlauf-Einstellungen gespeichert");
-      setTimeout(() => setSuccess(""), 3000);
-    } catch (e: any) {
-      setError(e?.message || "Fehler beim Speichern der Mahnlauf-Einstellungen");
-    }
   }
 
   async function handlePayPalConnect() {
@@ -303,47 +289,6 @@ export default function SettingsPage() {
           try { const res = await api.uploadLogo(file); setForm({ ...form, logoPath: res.path }); setSuccess("Logo hochgeladen"); setTimeout(() => setSuccess(""), 3000); } catch (err: any) { setError(err.message); }
         }} className="text-sm" />
       </section>
-
-      {reminders && (
-        <section className="bg-surface rounded-xl border border-border p-6 mt-8">
-          <h2 className="font-semibold mb-4">Mahnwesen</h2>
-          <form onSubmit={handleSaveReminders} className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">1. Mahnung (Tage)</label>
-                <input type="number" min="1" value={reminders.level1Days} onChange={e => setReminders({ ...reminders, level1Days: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">2. Mahnung (Tage)</label>
-                <input type="number" min="1" value={reminders.level2Days} onChange={e => setReminders({ ...reminders, level2Days: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Letzte Mahnung (Tage)</label>
-                <input type="number" min="1" value={reminders.level3Days} onChange={e => setReminders({ ...reminders, level3Days: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Gebuehr 1. Mahnung (EUR)</label>
-                <input type="number" min="0" step="0.01" value={reminders.level1Fee} onChange={e => setReminders({ ...reminders, level1Fee: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Gebuehr 2. Mahnung (EUR)</label>
-                <input type="number" min="0" step="0.01" value={reminders.level2Fee} onChange={e => setReminders({ ...reminders, level2Fee: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Gebuehr letzte Mahnung (EUR)</label>
-                <input type="number" min="0" step="0.01" value={reminders.level3Fee} onChange={e => setReminders({ ...reminders, level3Fee: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-              </div>
-            </div>
-            <div className="max-w-xs">
-              <label className="block text-sm font-medium mb-1">Verzugszins p.a. (%)</label>
-              <input type="number" min="0" step="0.01" value={reminders.annualInterestPercent} onChange={e => setReminders({ ...reminders, annualInterestPercent: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
-            </div>
-            <button type="submit" className="px-6 py-2.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover">Mahnwesen speichern</button>
-          </form>
-        </section>
-      )}
 
       <section className="bg-surface rounded-xl border border-border p-6 mt-8">
         <div className="flex items-center justify-between mb-4">
