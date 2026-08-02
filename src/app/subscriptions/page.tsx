@@ -19,6 +19,17 @@ const invoiceStatusMap: Record<string, { label: string; cls: string }> = {
   Cancelled: { label: "Storniert", cls: "bg-gray-100 text-gray-500" },
 };
 
+const collectionStatusMap: Record<string, string> = {
+  scheduled: "Einzug angekündigt",
+  open: "Einzug offen",
+  pending: "Einzug läuft",
+  paid: "Über Mollie eingezogen",
+  failed: "Einzug fehlgeschlagen",
+  canceled: "Einzug abgebrochen",
+  expired: "Einzug abgelaufen",
+  error: "Mollie-Fehler",
+};
+
 const categoryMap: Record<string, string> = {
   Allgemein: "Allgemein",
   DomainHosting: "Domain-Hosting",
@@ -96,6 +107,11 @@ export default function SubscriptionsPage() {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       setIsAdmin(u.role === "Admin" || u.roles?.includes("Admin"));
     } catch {}
+    if (new URLSearchParams(window.location.search).get("mollieMandate") === "returned") {
+      setSuccess("Mollie-Autorisierung abgeschlossen. Der Mandatsstatus wird automatisch aktualisiert.");
+      window.history.replaceState({}, "", "/subscriptions");
+      setTimeout(loadSubs, 2500);
+    }
   }, []);
 
   // KPI computations
@@ -137,14 +153,12 @@ export default function SubscriptionsPage() {
     }
   }
 
-  async function handleConfirm(id: string) {
+  async function handleMollieMandate(id: string) {
     try {
-      await api.confirmSub(id);
-      setSuccess("Abonnement bestätigt — Abrechnung läuft ab sofort");
-      setTimeout(() => setSuccess(""), 5000);
-      loadSubs();
+      const checkout = await api.startMollieMandate(id);
+      window.location.assign(checkout.checkoutUrl);
     } catch {
-      setError("Fehler beim Bestätigen des Abonnements");
+      setError("Mollie-Mandat konnte nicht gestartet werden");
     }
   }
 
@@ -382,7 +396,7 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
                       {sub.status === "PendingConfirmation" && (
-                        <button onClick={() => handleConfirm(sub.id)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">✓ Bestätigen</button>
+                        <button onClick={() => handleMollieMandate(sub.id)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Mollie-Mandat einrichten</button>
                       )}
                       {sub.status === "Active" && (
                         <button onClick={() => handleStatus(sub.id, "Paused")} className="text-xs text-warning hover:underline">Pausieren</button>
@@ -430,7 +444,7 @@ export default function SubscriptionsPage() {
                                 </td>
                                 <td className="px-3 py-2 text-right font-medium text-gray-800">{Number(i.grossTotal).toFixed(2)} €</td>
                                 <td className="px-3 py-2">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${inv(i.status).cls}`}>{inv(i.status).label}</span>
+                                  <span className={`text-xs px-2 py-0.5 rounded-full ${inv(i.status).cls}`}>{collectionStatusMap[i.paymentCollectionStatus] || inv(i.status).label}</span>
                                 </td>
                               </tr>
                             ))}
