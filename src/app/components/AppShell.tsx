@@ -5,7 +5,7 @@ import Sidebar from "./Sidebar";
 import TopHeader from "./TopHeader";
 import { Menu, X } from "lucide-react";
 
-const PUBLIC_PATHS = ["/login", "/approval"];
+const PUBLIC_PATHS = ["/login", "/approval", "/payment"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
