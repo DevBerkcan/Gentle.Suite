@@ -6,6 +6,7 @@ import type {
   CustomerSubscription,
   ExpenseDetail,
   ExpenseListItem,
+  EligibleSubscriptionQuote,
   GdprExport,
   InvoiceDetail,
   InvoiceListItem,
@@ -294,6 +295,7 @@ updateExpense: (id: string, data: any) => {
   // Subscriptions
   plans: () => apiFetch<any>("/subscriptions/plans"),
   customerSubs: (cid: string) => apiFetch<CustomerSubscription[]>(`/subscriptions/customer/${cid}`).then((list) => Array.isArray(list) ? list.map(normalizeSubscription) : list),
+  eligibleSubscriptionQuotes: (cid: string) => apiFetch<EligibleSubscriptionQuote[]>(`/subscriptions/eligible-quotes/${cid}`),
   createSub: (data: any) => apiFetch<CustomerSubscription>("/subscriptions", { method: "POST", body: JSON.stringify(data) }).then(normalizeSubscription),
   // Services
   services: () => apiFetch<ServiceCategory[]>("/servicecatalog").then((list) => Array.isArray(list) ? list.map(normalizeServiceCategory) : list),

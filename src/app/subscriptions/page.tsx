@@ -72,7 +72,9 @@ export default function SubscriptionsPage() {
   const [subs, setSubs] = useState<any[]>([]);
   const [customers, setCustomers] = useState<any[]>([]);
   const [showNew, setShowNew] = useState(false);
-  const [form, setForm] = useState({ customerId: "", planId: "", contractDurationMonths: "" });
+  const [form, setForm] = useState({ customerId: "", planId: "", contractQuoteId: "", contractDurationMonths: "", businessCustomerConfirmed: false });
+  const [eligibleQuotes, setEligibleQuotes] = useState<any[]>([]);
+  const [eligibleQuotesLoading, setEligibleQuotesLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [statusFilter, setStatusFilter] = useState("Alle");
@@ -120,6 +122,20 @@ export default function SubscriptionsPage() {
 
   const filteredSubs = statusFilter === "Alle" ? subs : subs.filter(s => s.status === statusFilter);
 
+  async function handleCustomerChange(customerId: string) {
+    setForm(current => ({ ...current, customerId, contractQuoteId: "", businessCustomerConfirmed: false }));
+    setEligibleQuotes([]);
+    if (!customerId) return;
+    setEligibleQuotesLoading(true);
+    try {
+      setEligibleQuotes(await api.eligibleSubscriptionQuotes(customerId));
+    } catch (e: any) {
+      setError(e?.message || "Vertragsangebote konnten nicht geladen werden");
+    } finally {
+      setEligibleQuotesLoading(false);
+    }
+  }
+
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     setCreating(true);
@@ -127,10 +143,13 @@ export default function SubscriptionsPage() {
       const created = await api.createSub({
         customerId: form.customerId,
         planId: form.planId,
+        contractQuoteId: form.contractQuoteId,
+        businessCustomerConfirmed: form.businessCustomerConfirmed,
         contractDurationMonths: form.contractDurationMonths ? parseInt(form.contractDurationMonths) : null,
       });
       setShowNew(false);
-      setForm({ customerId: "", planId: "", contractDurationMonths: "" });
+      setForm({ customerId: "", planId: "", contractQuoteId: "", contractDurationMonths: "", businessCustomerConfirmed: false });
+      setEligibleQuotes([]);
       setError("");
       if (created.mandateEmailStatus === "Sent") {
         setSuccess(`Serienrechnung angelegt — Einrichtungs-E-Mail wurde an ${created.mandateEmailRecipient} gesendet.`);
@@ -395,7 +414,10 @@ export default function SubscriptionsPage() {
               <Fragment key={sub.id}>
                 <tr className="border-b border-border hover:bg-background">
                   <td className="px-4 py-3 font-medium">{sub.customerName || "–"}</td>
-                  <td className="px-4 py-3">{sub.planName}</td>
+                  <td className="px-4 py-3">
+                    <div>{sub.planName}</div>
+                    <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "Legacy: kein Vertragsnachweis"}</div>
+                  </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
                   </td>
@@ -496,16 +518,26 @@ export default function SubscriptionsPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-text mb-1">Kunde *</label>
-                <select required value={form.customerId} onChange={e => setForm({ ...form, customerId: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                <select required value={form.customerId} onChange={e => handleCustomerChange(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                   <option value="">Bitte wählen...</option>
                   {customers.map((c: any) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-text mb-1">Angenommenes Vertragsangebot *</label>
+                <select required disabled={!form.customerId || eligibleQuotesLoading} value={form.contractQuoteId} onChange={e => setForm({ ...form, contractQuoteId: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-60">
+                  <option value="">{eligibleQuotesLoading ? "Wird geladen..." : "Bitte wählen..."}</option>
+                  {eligibleQuotes.map((q: any) => <option key={q.id} value={q.id}>{q.quoteNumber} · Version {q.version} · {Number(q.monthlyPrice).toFixed(2)} EUR/Monat</option>)}
+                </select>
+                {form.customerId && !eligibleQuotesLoading && eligibleQuotes.length === 0 && (
+                  <p className="mt-1 text-xs text-danger">Kein unterschriebenes Angebot mit monatlicher Position verfügbar. Bitte zuerst ein Angebot online unterschreiben lassen.</p>
+                )}
+              </div>
+              <div>
                 <label className="block text-sm font-medium text-text mb-1">Plan *</label>
                 <select required value={form.planId} onChange={e => setForm({ ...form, planId: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary">
                   <option value="">Bitte wählen...</option>
-                  {plans.filter((p: any) => p.isActive !== false).map((p: any) => <option key={p.id} value={p.id}>{p.name} — {categoryMap[p.category] || p.category} ({p.monthlyPrice?.toFixed(2)} EUR/Monat)</option>)}
+                  {plans.filter((p: any) => p.isActive !== false && p.billingCycle === "Monthly").map((p: any) => <option key={p.id} value={p.id}>{p.name} — {categoryMap[p.category] || p.category} ({p.monthlyPrice?.toFixed(2)} EUR/Monat)</option>)}
                 </select>
               </div>
               <div>
@@ -514,7 +546,11 @@ export default function SubscriptionsPage() {
                   {DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
               </div>
-              <p className="text-xs text-muted">Nach dem Anlegen sendet GentleSuite dem Kunden automatisch eine E-Mail zur einmaligen Mollie-Zahlungseinrichtung. Die Abrechnung startet erst nach einem gültigen Mandat.</p>
+              <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 text-sm">
+                <input required type="checkbox" checked={form.businessCustomerConfirmed} onChange={e => setForm({ ...form, businessCustomerConfirmed: e.target.checked })} className="mt-1" />
+                <span>Ich bestätige, dass der Kunde als Unternehmer handelt (B2B) und das ausgewählte Angebot die Vertragsgrundlage für diese Serienrechnung ist.</span>
+              </label>
+              <p className="text-xs text-muted">Der im unterschriebenen Angebot vereinbarte Monatsbetrag wird unveränderlich gespeichert. Erst danach versendet GentleSuite die einmalige Mollie-Zahlungseinrichtung; die Abrechnung startet ausschließlich nach einem gültigen Mandat.</p>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background transition-colors">Abbrechen</button>

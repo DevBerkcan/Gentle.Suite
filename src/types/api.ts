@@ -165,6 +165,7 @@ export interface QuoteDetail {
   signedByName?: string | null;
   signedByEmail?: string | null;
   signedAt?: string | null;
+  b2bAuthorityConfirmed?: boolean;
   primaryContactEmail?: string | null;
   lines: QuoteLine[];
   legalTextBlockKeys?: string[] | null;
@@ -347,7 +348,16 @@ export interface CustomerSubscription {
   startDate: string;
   nextBillingDate: string;
   monthlyPrice: number;
+  contractBillingCycle?: string | number;
   contractDurationMonths?: number | null;
+  contractQuoteId?: Id | null;
+  contractReference?: string | null;
+  contractVersion?: number | null;
+  contractAcceptedAt?: string | null;
+  contractAcceptedByName?: string | null;
+  contractAcceptedByEmail?: string | null;
+  businessCustomerConfirmed: boolean;
+  businessCustomerConfirmedAt?: string | null;
   confirmedAt?: string | null;
   mollieMandateStatus?: string | null;
   mandateEmailSentAt?: string | null;
@@ -355,6 +365,17 @@ export interface CustomerSubscription {
   mandateEmailStatus?: string | null;
   mandateEmailLastError?: string | null;
   mandateEmailAttemptCount: number;
+}
+
+export interface EligibleSubscriptionQuote {
+  id: Id;
+  quoteNumber: string;
+  version: number;
+  subject?: string | null;
+  monthlyPrice: number;
+  acceptedAt: string;
+  signedByName?: string | null;
+  signedByEmail?: string | null;
 }
 
 export interface ServiceCatalogItem {

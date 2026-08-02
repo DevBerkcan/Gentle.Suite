@@ -86,6 +86,7 @@ export default function MandateResultPage() {
 
         <footer className="py-5 text-center text-xs leading-5 text-muted">
           <p>GentleSuite · Zahlungsabwicklung über Mollie</p>
+          <a href="https://www.gentlegroup.de/datenschutzerklaerung" className="mt-2 inline-block text-primary hover:underline">Datenschutz</a>
           <p>Girardetstraße 17 · 42109 Wuppertal</p>
         </footer>
       </div>

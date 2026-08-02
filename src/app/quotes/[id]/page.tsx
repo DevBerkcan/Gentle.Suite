@@ -315,6 +315,7 @@ export default function QuoteDetailPage() {
               <div className="flex justify-between"><span className="text-muted">Unterzeichnet von</span><span>{quote.signedByName}</span></div>
               <div className="flex justify-between"><span className="text-muted">E-Mail</span><span>{quote.signedByEmail}</span></div>
               <div className="flex justify-between"><span className="text-muted">Datum</span><span>{quote.signedAt ? new Date(quote.signedAt).toLocaleDateString("de") : "\u2014"}</span></div>
+              <div className="flex justify-between"><span className="text-muted">B2B &amp; Vertretungsberechtigung</span><span className={quote.b2bAuthorityConfirmed ? "text-success" : "text-danger"}>{quote.b2bAuthorityConfirmed ? "Bestätigt" : "Nicht bestätigt"}</span></div>
             </div>
             {quote.signatureData && <img src={quote.signatureData} alt="Signatur" className="mt-3 border border-border rounded-lg max-h-20" />}
           </div>

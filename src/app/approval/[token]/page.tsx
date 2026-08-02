@@ -21,6 +21,9 @@ export default function ApprovalPage() {
   const [done, setDone] = useState(false);
   const [declined, setDeclined] = useState(false);
   const [comment, setComment] = useState("");
+  const [signerName, setSignerName] = useState("");
+  const [signerEmail, setSignerEmail] = useState("");
+  const [b2bAuthorityConfirmed, setB2bAuthorityConfirmed] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
@@ -43,6 +46,7 @@ export default function ApprovalPage() {
       .approval(token)
       .then((q) => {
         setQuote(q);
+        setSignerEmail(q.primaryContactEmail || "");
         return fetch(pdfDirectUrl);
       })
       .then((res) => {
@@ -189,6 +193,14 @@ export default function ApprovalPage() {
   }
 
   async function handleSign() {
+    if (!signerName.trim() || !signerEmail.trim()) {
+      alert("Bitte geben Sie den vollständigen Namen und die geschäftliche E-Mail-Adresse der unterzeichnenden Person an.");
+      return;
+    }
+    if (!b2bAuthorityConfirmed) {
+      alert("Bitte bestätigen Sie die Unternehmereigenschaft und Ihre Berechtigung zur Annahme des Angebots.");
+      return;
+    }
     const sigData = getSignatureDataUrl();
     if (!sigData) {
       alert("Bitte unterschreiben Sie im Feld.");
@@ -199,8 +211,9 @@ export default function ApprovalPage() {
       await api.processApproval(token, {
         accepted: true,
         signatureData: sigData,
-        signedByName: quote?.customerName ?? "",
-        signedByEmail: quote?.primaryContactEmail ?? "",
+        signedByName: signerName.trim(),
+        signedByEmail: signerEmail.trim(),
+        b2bAuthorityConfirmed,
         comment: "",
       });
       setDone(true);
@@ -451,12 +464,28 @@ export default function ApprovalPage() {
         <div ref={signRef} className="bg-[#252b3b] rounded-xl p-6 border border-slate-700">
           {quote?.customerName && (
             <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Unterzeichner</label>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Unternehmen</label>
               <div className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-400 text-sm select-none">
                 {quote.customerName}
               </div>
             </div>
           )}
+
+          <div className="grid gap-4 sm:grid-cols-2 mb-5">
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Vor- und Nachname *</label>
+              <input required value={signerName} onChange={(e) => setSignerName(e.target.value)} className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-slate-300 mb-1">Geschäftliche E-Mail-Adresse *</label>
+              <input required type="email" value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+
+          <label className="mb-5 flex items-start gap-3 rounded-lg border border-slate-700 bg-[#1a1f2e] p-4 text-sm leading-relaxed text-slate-300">
+            <input type="checkbox" checked={b2bAuthorityConfirmed} onChange={(e) => setB2bAuthorityConfirmed(e.target.checked)} className="mt-1" />
+            <span>Ich handle als Unternehmer im Sinne des § 14 BGB für das oben genannte Unternehmen und bin berechtigt, dieses Angebot verbindlich anzunehmen.</span>
+          </label>
 
           <div className="mb-2">
             <label className="block text-sm font-medium text-slate-300 mb-1">Unterschrift</label>
