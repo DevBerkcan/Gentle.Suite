@@ -396,6 +396,7 @@ deleteServiceItem: (id: string) =>
   updateSubStatus: (id: string, data: any) => apiFetch<any>(`/subscriptions/${id}/status`, { method: "PUT", body: JSON.stringify(data) }),
   confirmSub: (id: string) => apiFetch<any>(`/subscriptions/${id}/confirm`, { method: "POST" }),
   startMollieMandate: (id: string) => apiFetch<{ checkoutUrl: string; paymentId: string; status: string }>(`/subscriptions/${id}/mollie/mandate`, { method: "POST" }),
+  sendMollieMandateEmail: (id: string) => apiFetch<{ sent: boolean; recipient?: string | null; sentAt?: string | null; status: string; error?: string | null }>(`/subscriptions/${id}/mollie/mandate/email`, { method: "POST" }),
   subscriptionInvoices: (id: string) => apiFetch<any>(`/subscriptions/${id}/invoices`),
   createPlan: (data: any) => apiFetch<any>("/subscriptions/plans", { method: "POST", body: JSON.stringify(data) }),
   updatePlan: (id: string, data: any) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),

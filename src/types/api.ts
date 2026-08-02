@@ -347,6 +347,14 @@ export interface CustomerSubscription {
   startDate: string;
   nextBillingDate: string;
   monthlyPrice: number;
+  contractDurationMonths?: number | null;
+  confirmedAt?: string | null;
+  mollieMandateStatus?: string | null;
+  mandateEmailSentAt?: string | null;
+  mandateEmailRecipient?: string | null;
+  mandateEmailStatus?: string | null;
+  mandateEmailLastError?: string | null;
+  mandateEmailAttemptCount: number;
 }
 
 export interface ServiceCatalogItem {

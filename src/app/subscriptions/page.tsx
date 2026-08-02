@@ -77,6 +77,8 @@ export default function SubscriptionsPage() {
   const [success, setSuccess] = useState("");
   const [statusFilter, setStatusFilter] = useState("Alle");
   const [triggerLoading, setTriggerLoading] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [sendingMandateId, setSendingMandateId] = useState<string | null>(null);
 
   // Plan CRUD state
   const [showPlanModal, setShowPlanModal] = useState(false);
@@ -107,11 +109,6 @@ export default function SubscriptionsPage() {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       setIsAdmin(u.role === "Admin" || u.roles?.includes("Admin"));
     } catch {}
-    if (new URLSearchParams(window.location.search).get("mollieMandate") === "returned") {
-      setSuccess("Mollie-Autorisierung abgeschlossen. Der Mandatsstatus wird automatisch aktualisiert.");
-      window.history.replaceState({}, "", "/subscriptions");
-      setTimeout(loadSubs, 2500);
-    }
   }, []);
 
   // KPI computations
@@ -125,8 +122,9 @@ export default function SubscriptionsPage() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
+    setCreating(true);
     try {
-      await api.createSub({
+      const created = await api.createSub({
         customerId: form.customerId,
         planId: form.planId,
         contractDurationMonths: form.contractDurationMonths ? parseInt(form.contractDurationMonths) : null,
@@ -134,11 +132,17 @@ export default function SubscriptionsPage() {
       setShowNew(false);
       setForm({ customerId: "", planId: "", contractDurationMonths: "" });
       setError("");
-      setSuccess("Abonnement angelegt — bitte bestätigen um Abrechnung zu starten");
+      if (created.mandateEmailStatus === "Sent") {
+        setSuccess(`Serienrechnung angelegt — Einrichtungs-E-Mail wurde an ${created.mandateEmailRecipient} gesendet.`);
+      } else {
+        setError(`Serienrechnung wurde angelegt, aber die Einrichtungs-E-Mail konnte nicht gesendet werden${created.mandateEmailLastError ? `: ${created.mandateEmailLastError}` : "."}`);
+      }
       setTimeout(() => setSuccess(""), 6000);
       loadSubs();
-    } catch {
-      setError("Fehler beim Anlegen des Abonnements");
+    } catch (e: any) {
+      setError(e?.message || "Fehler beim Anlegen des Abonnements");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -153,12 +157,19 @@ export default function SubscriptionsPage() {
     }
   }
 
-  async function handleMollieMandate(id: string) {
+  async function handleMandateEmail(id: string) {
+    setSendingMandateId(id);
     try {
-      const checkout = await api.startMollieMandate(id);
-      window.location.assign(checkout.checkoutUrl);
-    } catch {
-      setError("Mollie-Mandat konnte nicht gestartet werden");
+      const result = await api.sendMollieMandateEmail(id);
+      setError("");
+      setSuccess(`Einrichtungs-E-Mail wurde an ${result.recipient} gesendet.`);
+      setTimeout(() => setSuccess(""), 6000);
+      loadSubs();
+    } catch (e: any) {
+      setError(e?.message || "Einrichtungs-E-Mail konnte nicht gesendet werden");
+      loadSubs();
+    } finally {
+      setSendingMandateId(null);
     }
   }
 
@@ -371,6 +382,7 @@ export default function SubscriptionsPage() {
               <th className="px-4 py-3 text-left text-xs text-muted">Kunde</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Plan</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
+              <th className="px-4 py-3 text-left text-xs text-muted">Mandats-E-Mail</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Start</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Nächste Abrechnung</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Laufzeit</th>
@@ -387,6 +399,15 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
                   </td>
+                  <td className="px-4 py-3 text-xs">
+                    {sub.mandateEmailStatus === "Sent" ? (
+                      <div><span className="font-medium text-success">Gesendet</span><div className="mt-1 text-muted">{sub.mandateEmailRecipient}<br />{sub.mandateEmailSentAt ? new Date(sub.mandateEmailSentAt).toLocaleString("de-DE") : ""}</div></div>
+                    ) : sub.mandateEmailStatus === "Failed" ? (
+                      <div><span className="font-medium text-danger">Fehlgeschlagen</span><div className="mt-1 max-w-48 text-muted" title={sub.mandateEmailLastError || ""}>{sub.mandateEmailLastError || "Erneut senden"}</div></div>
+                    ) : (
+                      <span className="text-muted">Noch nicht versendet</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-sm text-muted">{new Date(sub.startDate).toLocaleDateString("de")}</td>
                   <td className="px-4 py-3 text-sm text-muted">
                     {sub.status === "PendingConfirmation" ? "–" : new Date(sub.nextBillingDate).toLocaleDateString("de")}
@@ -396,7 +417,9 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
                       {sub.status === "PendingConfirmation" && (
-                        <button onClick={() => handleMollieMandate(sub.id)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700">Mollie-Mandat einrichten</button>
+                        <button disabled={sendingMandateId === sub.id} onClick={() => handleMandateEmail(sub.id)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50">
+                          {sendingMandateId === sub.id ? "Wird gesendet..." : sub.mandateEmailStatus === "Sent" ? "E-Mail erneut senden" : "Einrichtungs-E-Mail senden"}
+                        </button>
                       )}
                       {sub.status === "Active" && (
                         <button onClick={() => handleStatus(sub.id, "Paused")} className="text-xs text-warning hover:underline">Pausieren</button>
@@ -415,7 +438,7 @@ export default function SubscriptionsPage() {
                 </tr>
                 {expandedSubId === sub.id && (
                   <tr>
-                    <td colSpan={8} className="bg-gray-50 px-6 py-4">
+                    <td colSpan={9} className="bg-gray-50 px-6 py-4">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Serienrechnungen</p>
                       {subInvoices[sub.id] === undefined ? (
                         <p className="text-xs text-gray-400">Laden...</p>
@@ -491,11 +514,11 @@ export default function SubscriptionsPage() {
                   {DURATIONS.map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
                 </select>
               </div>
-              <p className="text-xs text-muted">Das Abonnement muss nach dem Anlegen explizit bestätigt werden, bevor die Abrechnung startet.</p>
+              <p className="text-xs text-muted">Nach dem Anlegen sendet GentleSuite dem Kunden automatisch eine E-Mail zur einmaligen Mollie-Zahlungseinrichtung. Die Abrechnung startet erst nach einem gültigen Mandat.</p>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background transition-colors">Abbrechen</button>
-              <button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">Anlegen</button>
+              <button type="submit" disabled={creating} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors disabled:opacity-50">{creating ? "Wird angelegt und gesendet..." : "Anlegen & E-Mail senden"}</button>
             </div>
           </form>
         </div>
