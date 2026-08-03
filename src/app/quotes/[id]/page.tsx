@@ -245,6 +245,9 @@ export default function QuoteDetailPage() {
           {(quoteStatus === "Draft" || quoteStatus === "Sent") && <button onClick={() => { setSendForm({ ...sendForm, recipientEmail: quote.primaryContactEmail || "" }); setShowSend(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>}
           {quoteStatus === "Accepted" && <button onClick={handleMarkAsOrdered} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">Auftrag bestätigen</button>}
           {["Accepted", "Ordered"].includes(quoteStatus) && <button onClick={handleConvert} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">→ Zur Rechnung</button>}
+          {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.b2bAuthorityConfirmed && Number(quote.subtotalMonthly || 0) > 0 && (
+            <button onClick={() => router.push(`/subscriptions?quoteId=${quote.id}`)} className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800">→ Zur Serienrechnung</button>
+          )}
           {quoteStatus === "Draft" && <button onClick={handleDelete} className="px-4 py-2 text-danger border border-danger/30 rounded-lg text-sm font-medium hover:bg-red-50">Loeschen</button>}
         </div>
       </div>

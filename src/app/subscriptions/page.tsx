@@ -104,9 +104,55 @@ export default function SubscriptionsPage() {
   }
 
   useEffect(() => {
-    loadPlans();
-    loadSubs();
-    api.customers().then((r: any) => setCustomers(r.items || [])).catch(() => {});
+    async function initialize() {
+      try {
+        const [loadedPlans, loadedSubs, customerResult] = await Promise.all([
+          api.plans(),
+          api.allSubs(),
+          api.customers(),
+        ]);
+        setPlans(loadedPlans);
+        setSubs(loadedSubs);
+        setCustomers((customerResult as any).items || []);
+
+        const quoteId = new URLSearchParams(window.location.search).get("quoteId");
+        if (!quoteId) return;
+
+        const quote = await api.quote(quoteId);
+        const quoteStatus = typeof quote.status === "number" ? ["Draft", "Sent", "Viewed", "Accepted", "Rejected", "Expired", "Ordered"][quote.status] : quote.status;
+        const signatureStatus = typeof quote.signatureStatus === "number" ? ["Pending", "Signed", "Declined"][quote.signatureStatus] : quote.signatureStatus;
+        if (!["Accepted", "Ordered"].includes(String(quoteStatus)) || signatureStatus !== "Signed" || !quote.b2bAuthorityConfirmed || Number(quote.subtotalMonthly || 0) <= 0) {
+          setError("Das Angebot kann nicht als Serienrechnung verwendet werden. Erforderlich sind eine monatliche Position, Unterschrift und B2B-Bestätigung.");
+          return;
+        }
+
+        const quotes = await api.eligibleSubscriptionQuotes(quote.customerId);
+        if (!quotes.some(q => q.id === quoteId)) {
+          setError("Für dieses Angebot wurde bereits eine Serienrechnung angelegt oder es ist nicht mehr verfügbar.");
+          return;
+        }
+
+        const monthlyPlans = loadedPlans.filter((plan: any) => plan.isActive !== false && plan.billingCycle === "Monthly");
+        const normalizedLineTitles = (quote.lines || []).filter((line: any) => line.lineType === "RecurringMonthly").map((line: any) => line.title.trim().toLocaleLowerCase("de-DE"));
+        const namedMatches = monthlyPlans.filter((plan: any) => normalizedLineTitles.includes(String(plan.name || "").trim().toLocaleLowerCase("de-DE")));
+        const priceMatches = monthlyPlans.filter((plan: any) => Math.abs(Number(plan.monthlyPrice) - Number(quote.subtotalMonthly)) < 0.005);
+        const matchingPlan = namedMatches.length === 1 ? namedMatches[0] : priceMatches.length === 1 ? priceMatches[0] : monthlyPlans.length === 1 ? monthlyPlans[0] : null;
+
+        setEligibleQuotes(quotes);
+        setForm({
+          customerId: quote.customerId,
+          planId: matchingPlan?.id || "",
+          contractQuoteId: quoteId,
+          contractDurationMonths: "",
+          businessCustomerConfirmed: true,
+        });
+        setShowNew(true);
+      } catch (e: any) {
+        setError(e?.message || "Serienrechnung konnte nicht aus dem Angebot vorbereitet werden");
+      }
+    }
+
+    initialize();
     try {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       setIsAdmin(u.role === "Admin" || u.roles?.includes("Admin"));
@@ -531,6 +577,9 @@ export default function SubscriptionsPage() {
                 </select>
                 {form.customerId && !eligibleQuotesLoading && eligibleQuotes.length === 0 && (
                   <p className="mt-1 text-xs text-danger">Kein unterschriebenes Angebot mit monatlicher Position verfügbar. Bitte zuerst ein Angebot online unterschreiben lassen.</p>
+                )}
+                {form.contractQuoteId && eligibleQuotes.some(q => q.id === form.contractQuoteId) && (
+                  <p className="mt-1 text-xs text-success">Vertragsgrundlage übernommen: {eligibleQuotes.find(q => q.id === form.contractQuoteId)?.quoteNumber}</p>
                 )}
               </div>
               <div>
