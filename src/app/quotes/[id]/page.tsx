@@ -53,6 +53,7 @@ export default function QuoteDetailPage() {
   const [quote, setQuote] = useState<any>(null);
   const [lines, setLines] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [plans, setPlans] = useState<any[]>([]);
   const [versions, setVersions] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
@@ -66,6 +67,7 @@ export default function QuoteDetailPage() {
     if (!id) return;
     loadQuote();
     api.services().then(setCategories).catch(() => {});
+    api.plans().then(setPlans).catch(() => {});
   }, [id]);
 
   function loadQuote() {
@@ -94,6 +96,7 @@ export default function QuoteDetailPage() {
   function addLineFromService(svc: any) {
     setLines([...lines, {
       serviceCatalogItemId: svc.id,
+      subscriptionPlanId: null,
       title: svc.name,
       description: svc.description || "",
       quantity: 1,
@@ -105,12 +108,45 @@ export default function QuoteDetailPage() {
     }]);
   }
 
-  function selectServiceForLine(idx: number, serviceId: string) {
-    if (!serviceId) { updateLine(idx, "serviceCatalogItemId", null); return; }
-    const svc = categories.flatMap((c: any) => c.items || []).find((i: any) => i.id === serviceId);
-    if (!svc) return;
+  function addLineFromPlan(plan: any) {
+    setLines([...lines, {
+      serviceCatalogItemId: null,
+      subscriptionPlanId: plan.id,
+      title: plan.name,
+      description: plan.description || "",
+      quantity: 1,
+      unitPrice: plan.monthlyPrice || 0,
+      discountPercent: 0,
+      vatPercent: 19,
+      lineType: "RecurringMonthly",
+      sortOrder: lines.length,
+    }]);
+  }
+
+  function addItemFromValue(value: string) {
+    if (!value) return;
+    if (value.startsWith("plan:")) {
+      const plan = plans.find((p: any) => p.id === value.slice(5));
+      if (plan) addLineFromPlan(plan);
+      return;
+    }
+    const svc = categories.flatMap((c: any) => c.items || []).find((i: any) => i.id === value);
+    if (svc) addLineFromService(svc);
+  }
+
+  function selectItemForLine(idx: number, value: string) {
     const updated = [...lines];
-    updated[idx] = { ...updated[idx], serviceCatalogItemId: svc.id, title: svc.name, description: svc.description || "", unitPrice: svc.defaultPrice || 0, lineType: svc.defaultLineType || "OneTime" };
+    if (!value) { updated[idx] = { ...updated[idx], serviceCatalogItemId: null, subscriptionPlanId: null }; setLines(updated); return; }
+    if (value.startsWith("plan:")) {
+      const plan = plans.find((p: any) => p.id === value.slice(5));
+      if (!plan) return;
+      updated[idx] = { ...updated[idx], subscriptionPlanId: plan.id, serviceCatalogItemId: null, title: plan.name, description: plan.description || "", unitPrice: plan.monthlyPrice || 0, lineType: "RecurringMonthly" };
+      setLines(updated);
+      return;
+    }
+    const svc = categories.flatMap((c: any) => c.items || []).find((i: any) => i.id === value);
+    if (!svc) return;
+    updated[idx] = { ...updated[idx], serviceCatalogItemId: svc.id, subscriptionPlanId: null, title: svc.name, description: svc.description || "", unitPrice: svc.defaultPrice || 0, lineType: svc.defaultLineType || "OneTime" };
     setLines(updated);
   }
 
@@ -347,7 +383,7 @@ export default function QuoteDetailPage() {
               <div key={idx} className="border border-border rounded-lg p-3">
                 <div className="mb-2">
                   <label className="block text-xs text-muted mb-1">Leistung</label>
-                  <select value={line.serviceCatalogItemId || ""} onChange={e => selectServiceForLine(idx, e.target.value)} className="w-full px-2 py-1.5 border border-border rounded text-sm bg-white">
+                  <select value={line.subscriptionPlanId ? `plan:${line.subscriptionPlanId}` : (line.serviceCatalogItemId || "")} onChange={e => selectItemForLine(idx, e.target.value)} className="w-full px-2 py-1.5 border border-border rounded text-sm bg-white">
                     <option value="">Manuell</option>
                     {categories.map((cat: any) => (
                       <optgroup key={cat.id} label={cat.name}>
@@ -356,6 +392,13 @@ export default function QuoteDetailPage() {
                         ))}
                       </optgroup>
                     ))}
+                    {plans.filter((p: any) => p.isActive !== false).length > 0 && (
+                      <optgroup label="Serienrechnungs-Pläne">
+                        {plans.filter((p: any) => p.isActive !== false).map((plan: any) => (
+                          <option key={plan.id} value={`plan:${plan.id}`}>{plan.name}{plan.monthlyPrice ? ` (${plan.monthlyPrice.toFixed(2)} EUR/Monat)` : ""}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
                 <div className="grid grid-cols-12 gap-2 items-end">
@@ -385,7 +428,7 @@ export default function QuoteDetailPage() {
                   </div>
                   <div className="col-span-2">
                     <label className="block text-xs text-muted mb-1">Typ</label>
-                    <select value={line.lineType} onChange={e => updateLine(idx, "lineType", e.target.value)} className="w-full px-1 py-1.5 border border-border rounded text-sm">
+                    <select value={line.lineType} disabled={!!line.subscriptionPlanId} onChange={e => updateLine(idx, "lineType", e.target.value)} className="w-full px-1 py-1.5 border border-border rounded text-sm disabled:bg-gray-50 disabled:text-muted">
                       <option value="OneTime">Einmalig</option>
                       <option value="RecurringMonthly">Monatlich</option>
                     </select>
@@ -402,7 +445,7 @@ export default function QuoteDetailPage() {
             <div className="flex gap-2">
               <button onClick={addLine} className="flex-1 px-3 py-1.5 border border-dashed border-border rounded-lg text-sm text-muted hover:text-text hover:border-primary">+ Leere Position</button>
               <div className="relative flex-1">
-                <select onChange={e => { if (e.target.value) { const svc = categories.flatMap((c: any) => c.items || []).find((i: any) => i.id === e.target.value); if (svc) addLineFromService(svc); e.target.value = ""; } }} className="w-full px-3 py-1.5 border border-dashed border-primary rounded-lg text-sm text-primary bg-white cursor-pointer appearance-none text-center" defaultValue="">
+                <select onChange={e => { addItemFromValue(e.target.value); e.target.value = ""; }} className="w-full px-3 py-1.5 border border-dashed border-primary rounded-lg text-sm text-primary bg-white cursor-pointer appearance-none text-center" defaultValue="">
                   <option value="" disabled>+ Leistung hinzufuegen</option>
                   {categories.map((cat: any) => (
                     <optgroup key={cat.id} label={cat.name}>
@@ -411,6 +454,13 @@ export default function QuoteDetailPage() {
                       ))}
                     </optgroup>
                   ))}
+                  {plans.filter((p: any) => p.isActive !== false).length > 0 && (
+                    <optgroup label="Serienrechnungs-Pläne">
+                      {plans.filter((p: any) => p.isActive !== false).map((plan: any) => (
+                        <option key={plan.id} value={`plan:${plan.id}`}>{plan.name}{plan.monthlyPrice ? ` (${plan.monthlyPrice.toFixed(2)} EUR/Monat)` : ""}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
             </div>
@@ -423,7 +473,13 @@ export default function QuoteDetailPage() {
                 {(quote.lines || []).map((l: any, i: number) => (
                   <tr key={i} className="border-b border-border">
                     <td className="px-4 py-3 text-sm text-muted">{i + 1}</td>
-                    <td className="px-4 py-3"><span className="text-sm font-medium">{l.title}</span>{l.description && <p className="text-xs text-muted">{l.description}</p>}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-sm font-medium">{l.title}</span>
+                      {l.description && <p className="text-xs text-muted">{l.description}</p>}
+                      {l.subscriptionPlanId && (
+                        <p className="text-xs text-primary mt-0.5">Serienrechnung: {plans.find((p: any) => p.id === l.subscriptionPlanId)?.name || "Plan"}</p>
+                      )}
+                    </td>
                     <td className="px-4 py-3"><span className={`text-xs px-2 py-0.5 rounded ${asLineType(l.lineType) === "RecurringMonthly" ? "bg-blue-50 text-blue-700" : "bg-gray-100 text-muted"}`}>{asLineType(l.lineType) === "RecurringMonthly" ? "Monatlich" : "Einmalig"}</span></td>
                     <td className="px-4 py-3 text-sm text-right">{l.quantity}</td>
                     <td className="px-4 py-3 text-sm text-right">{l.unitPrice?.toFixed(2)} EUR</td>
@@ -439,7 +495,7 @@ export default function QuoteDetailPage() {
               <div className="flex gap-2 mt-4 px-4 pb-2">
                 <button onClick={() => { setEditing(true); addLine(); }} className="flex-1 px-3 py-2 border border-dashed border-border rounded-lg text-sm text-muted hover:text-text hover:border-primary">+ Leere Position</button>
                 <div className="relative flex-1">
-                  <select onChange={e => { if (e.target.value) { const svc = categories.flatMap((c: any) => c.items || []).find((i: any) => i.id === e.target.value); if (svc) { setEditing(true); addLineFromService(svc); } e.target.value = ""; } }} className="w-full px-3 py-2 border border-dashed border-primary rounded-lg text-sm text-primary bg-white cursor-pointer appearance-none text-center" defaultValue="">
+                  <select onChange={e => { if (e.target.value) { setEditing(true); addItemFromValue(e.target.value); } e.target.value = ""; }} className="w-full px-3 py-2 border border-dashed border-primary rounded-lg text-sm text-primary bg-white cursor-pointer appearance-none text-center" defaultValue="">
                     <option value="" disabled>+ Leistung hinzufuegen</option>
                     {categories.map((cat: any) => (
                       <optgroup key={cat.id} label={cat.name}>
@@ -448,6 +504,13 @@ export default function QuoteDetailPage() {
                         ))}
                       </optgroup>
                     ))}
+                    {plans.filter((p: any) => p.isActive !== false).length > 0 && (
+                      <optgroup label="Serienrechnungs-Pläne">
+                        {plans.filter((p: any) => p.isActive !== false).map((plan: any) => (
+                          <option key={plan.id} value={`plan:${plan.id}`}>{plan.name}{plan.monthlyPrice ? ` (${plan.monthlyPrice.toFixed(2)} EUR/Monat)` : ""}</option>
+                        ))}
+                      </optgroup>
+                    )}
                   </select>
                 </div>
               </div>
