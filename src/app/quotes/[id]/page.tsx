@@ -47,6 +47,37 @@ function toTaxModeNumber(value: any) {
   return 0;
 }
 
+function formatDeAmount(v: number) {
+  return (Number.isFinite(v) ? v : 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function parseDeAmount(s: string): number {
+  const cleaned = s.trim().replace(/\./g, "").replace(",", ".").replace(/[^\d.-]/g, "");
+  const n = parseFloat(cleaned);
+  return Number.isFinite(n) ? n : 0;
+}
+
+function PriceInput({ value, onChange, className }: { value: number; onChange: (v: number) => void; className?: string }) {
+  const [text, setText] = useState(() => formatDeAmount(value));
+  const [focused, setFocused] = useState(false);
+
+  useEffect(() => {
+    if (!focused) setText(formatDeAmount(value));
+  }, [value, focused]);
+
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      value={text}
+      onFocus={() => { setFocused(true); setText(value ? String(value).replace(".", ",") : ""); }}
+      onChange={e => setText(e.target.value)}
+      onBlur={() => { const n = parseDeAmount(text); setFocused(false); setText(formatDeAmount(n)); onChange(n); }}
+      className={className}
+    />
+  );
+}
+
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -411,8 +442,8 @@ export default function QuoteDetailPage() {
                     <input type="number" min="1" value={line.quantity} onChange={e => updateLine(idx, "quantity", Number(e.target.value))} className="w-full px-2 py-1.5 border border-border rounded text-sm" />
                   </div>
                   <div className="col-span-2">
-                    <label className="block text-xs text-muted mb-1">Preis</label>
-                    <input type="number" step="0.01" value={line.unitPrice} onChange={e => updateLine(idx, "unitPrice", Number(e.target.value))} className="w-full px-2 py-1.5 border border-border rounded text-sm" />
+                    <label className="block text-xs text-muted mb-1">Preis (EUR)</label>
+                    <PriceInput value={line.unitPrice} onChange={v => updateLine(idx, "unitPrice", v)} className="w-full px-2 py-1.5 border border-border rounded text-sm text-right" />
                   </div>
                   <div className="col-span-1">
                     <label className="block text-xs text-muted mb-1">Rabatt%</label>
