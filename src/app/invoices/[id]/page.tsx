@@ -268,8 +268,12 @@ async function handlePdfDownload() {
           {(invoiceStatus === "Final" || invoiceStatus === "Sent" || invoiceStatus === "Open" || invoiceStatus === "Overdue") && (
             <button onClick={handleSend} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>
           )}
-          <button onClick={() => { setPaymentForm({ ...paymentForm, amount: openAmount }); setShowPayment(true); }} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">Zahlung erfassen</button>
-          <button onClick={handleCancel} className="px-4 py-2 border border-danger text-danger rounded-lg text-sm font-medium hover:bg-red-50">Storno</button>
+          {invoiceStatus !== "Cancelled" && invoiceType !== "Cancellation" && (
+            <button onClick={() => { setPaymentForm({ ...paymentForm, amount: openAmount }); setShowPayment(true); }} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">Zahlung erfassen</button>
+          )}
+          {invoiceStatus !== "Cancelled" && invoiceType !== "Cancellation" && (
+            <button onClick={handleCancel} className="px-4 py-2 border border-danger text-danger rounded-lg text-sm font-medium hover:bg-red-50">Storno</button>
+          )}
         </div>
       </div>
 

@@ -512,7 +512,7 @@ const save = async () => {
                       {xmlDownloading === i.id ? "…" : "XML"}
                     </button>
                   )}
-                  {i.status !== "Cancelled" && (
+                  {i.status !== "Cancelled" && i.type !== "Cancellation" && (
                     <button
                       onClick={(e) => { e.stopPropagation(); setListPaymentForm({ amount: i.grossTotal ?? 0, paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "BankTransfer", reference: "", note: "" }); setPayingInvoice(i); }}
                       className="text-xs px-2 py-1 bg-green-50 text-success rounded-full hover:bg-green-100"
@@ -520,7 +520,7 @@ const save = async () => {
                       Zahlung
                     </button>
                   )}
-                  {i.status !== "Cancelled" && (
+                  {i.status !== "Cancelled" && i.type !== "Cancellation" && (
                     <button
                       onClick={(e) => handleCancelFromList(i, e)}
                       disabled={cancellingId === i.id}
