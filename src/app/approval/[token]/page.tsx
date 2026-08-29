@@ -24,6 +24,7 @@ export default function ApprovalPage() {
   const [signerName, setSignerName] = useState("");
   const [signerEmail, setSignerEmail] = useState("");
   const [b2bAuthorityConfirmed, setB2bAuthorityConfirmed] = useState(false);
+  const [chosenPaymentTermKey, setChosenPaymentTermKey] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
@@ -201,6 +202,10 @@ export default function ApprovalPage() {
       alert("Bitte bestätigen Sie die Unternehmereigenschaft und Ihre Berechtigung zur Annahme des Angebots.");
       return;
     }
+    if ((quote?.paymentTermOptions?.length ?? 0) > 0 && !chosenPaymentTermKey) {
+      alert("Bitte wählen Sie eine Zahlungsbedingung aus.");
+      return;
+    }
     const sigData = getSignatureDataUrl();
     if (!sigData) {
       alert("Bitte unterschreiben Sie im Feld.");
@@ -214,6 +219,7 @@ export default function ApprovalPage() {
         signedByName: signerName.trim(),
         signedByEmail: signerEmail.trim(),
         b2bAuthorityConfirmed,
+        chosenPaymentTermKey: chosenPaymentTermKey || undefined,
         comment: "",
       });
       setDone(true);
@@ -321,10 +327,8 @@ export default function ApprovalPage() {
             <div className="absolute inset-0 flex items-center justify-center text-7xl select-none">📋</div>
           </div>
           <h1 className="text-3xl font-bold mb-4">Angebot</h1>
-          <p className="text-slate-300 text-sm leading-relaxed max-w-md">
-            Vielen Dank für Ihr Interesse. Bitte prüfen Sie das nachfolgende Dokument sorgfältig.
-            Wenn Sie damit einverstanden sind, unterschreiben Sie es am Ende mittels digitaler Signatur.
-            Im Anschluss können Sie das Dokument als PDF herunterladen.
+          <p className="text-slate-300 text-sm leading-relaxed max-w-md whitespace-pre-wrap">
+            {quote?.introText || "Vielen Dank für Ihr Interesse. Bitte prüfen Sie das nachfolgende Dokument sorgfältig. Wenn Sie damit einverstanden sind, unterschreiben Sie es am Ende mittels digitaler Signatur. Im Anschluss können Sie das Dokument als PDF herunterladen."}
           </p>
           <button
             onClick={() => signRef.current?.scrollIntoView({ behavior: "smooth" })}
@@ -460,6 +464,30 @@ export default function ApprovalPage() {
             )}
           </div>
         </div>
+
+        {quote?.outroText && (
+          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
+            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{quote.outroText}</p>
+          </div>
+        )}
+
+        {(quote?.paymentTermOptions?.length ?? 0) > 0 && (
+          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
+            <h2 className="text-lg font-semibold mb-1">Zahlungsbedingung wählen *</h2>
+            <p className="text-slate-400 text-xs mb-4">Bitte wählen Sie eine der folgenden Zahlungsbedingungen aus.</p>
+            <div className="space-y-3">
+              {quote!.paymentTermOptions!.map((pt: any) => (
+                <label key={pt.key} className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenPaymentTermKey === pt.key ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                  <input type="radio" name="paymentTerm" className="mt-1" checked={chosenPaymentTermKey === pt.key} onChange={() => setChosenPaymentTermKey(pt.key)} />
+                  <span>
+                    <span className="block font-medium text-white">{pt.title}</span>
+                    <span className="block text-slate-400 mt-0.5">{pt.content}</span>
+                  </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div ref={signRef} className="bg-[#252b3b] rounded-xl p-6 border border-slate-700">
           {quote?.customerName && (

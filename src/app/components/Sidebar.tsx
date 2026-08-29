@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, FolderKanban, RefreshCw, Clock, Settings, PackageOpen, Mail, FileStack, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, BarChart2, CalendarDays, Search } from "lucide-react";
+import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, FolderKanban, RefreshCw, Clock, Settings, PackageOpen, Mail, FileStack, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, BarChart2, CalendarDays, Search, CreditCard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -37,6 +37,7 @@ const adminNav: NavItem[] = [
   { href: "/templates", label: "Vorlagen", icon: FileStack },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardCheck },
   { href: "/legal-texts", label: "Rechtstexte", icon: Scale },
+  { href: "/payment-terms", label: "Zahlungsbedingungen", icon: CreditCard },
   { href: "/email-templates", label: "E-Mail-Vorlagen", icon: Mail },
   { href: "/emails", label: "E-Mail-Protokoll", icon: Mail },
   { href: "/users", label: "Zugänge", icon: KeyRound },

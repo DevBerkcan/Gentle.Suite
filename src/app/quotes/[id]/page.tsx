@@ -86,9 +86,10 @@ export default function QuoteDetailPage() {
   const [categories, setCategories] = useState<any[]>([]);
   const [plans, setPlans] = useState<any[]>([]);
   const [versions, setVersions] = useState<any[]>([]);
+  const [paymentTermCatalog, setPaymentTermCatalog] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
-  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19 });
+  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[] });
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 30 });
   const [error, setError] = useState("");
@@ -99,6 +100,7 @@ export default function QuoteDetailPage() {
     loadQuote();
     api.services().then(setCategories).catch(() => {});
     api.plans().then(setPlans).catch(() => {});
+    api.paymentTerms().then(setPaymentTermCatalog).catch(() => {});
   }, [id]);
 
   function loadQuote() {
@@ -199,8 +201,16 @@ export default function QuoteDetailPage() {
       notes: quote.notes || "",
       taxMode: quote.taxMode || "Standard",
       taxRate: quote.taxRate ?? 19,
+      paymentTermKeys: quote.paymentTermKeys || [],
     });
     setEditingHeader(true);
+  }
+
+  function togglePaymentTermKey(key: string) {
+    setHeaderForm(f => ({
+      ...f,
+      paymentTermKeys: f.paymentTermKeys.includes(key) ? f.paymentTermKeys.filter(k => k !== key) : [...f.paymentTermKeys, key],
+    }));
   }
 
   async function saveHeader() {
@@ -340,6 +350,18 @@ export default function QuoteDetailPage() {
               <div><label className="text-xs text-muted block mb-1">Einleitungstext</label><textarea rows={2} value={headerForm.introText} onChange={e => setHeaderForm({ ...headerForm, introText: e.target.value })} className="w-full px-2 py-1.5 border border-border rounded text-sm" /></div>
               <div><label className="text-xs text-muted block mb-1">Schlusstext</label><textarea rows={2} value={headerForm.outroText} onChange={e => setHeaderForm({ ...headerForm, outroText: e.target.value })} className="w-full px-2 py-1.5 border border-border rounded text-sm" /></div>
               <div><label className="text-xs text-muted block mb-1">Notizen</label><textarea rows={2} value={headerForm.notes} onChange={e => setHeaderForm({ ...headerForm, notes: e.target.value })} className="w-full px-2 py-1.5 border border-border rounded text-sm" /></div>
+              <div>
+                <label className="text-xs text-muted block mb-1">Zahlungsbedingungen (Mehrfachauswahl f\u00fcr den Kunden)</label>
+                <div className="space-y-1.5 border border-border rounded p-2 max-h-40 overflow-auto">
+                  {paymentTermCatalog.map((pt: any) => (
+                    <label key={pt.key} className="flex items-start gap-2 text-sm">
+                      <input type="checkbox" className="mt-0.5" checked={headerForm.paymentTermKeys.includes(pt.key)} onChange={() => togglePaymentTermKey(pt.key)} />
+                      <span>{pt.title}</span>
+                    </label>
+                  ))}
+                  {paymentTermCatalog.length === 0 && <p className="text-xs text-muted">Keine Zahlungsbedingungen im Katalog hinterlegt. Unter "Verwaltung \u2192 Zahlungsbedingungen" anlegen.</p>}
+                </div>
+              </div>
               <div className="flex gap-2">
                 <button onClick={saveHeader} className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm">Speichern</button>
                 <button onClick={() => setEditingHeader(false)} className="px-3 py-1.5 border border-border rounded-lg text-sm">Abbrechen</button>
@@ -351,6 +373,18 @@ export default function QuoteDetailPage() {
               <div className="flex justify-between"><span className="text-muted">Erstellt</span><span>{new Date(quote.createdAt).toLocaleDateString("de")}</span></div>
               <div className="flex justify-between"><span className="text-muted">Steuersatz</span><span>{quote.taxRate}%</span></div>
               <div className="flex justify-between"><span className="text-muted">Steuermodus</span><span>{quote.taxMode}</span></div>
+              {quote.paymentTermOptions?.length > 0 && (
+                <div>
+                  <span className="text-muted block mb-1">Zahlungsbedingungen</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quote.paymentTermOptions.map((pt: any) => (
+                      <span key={pt.key} className={`text-xs px-2 py-0.5 rounded-full ${pt.key === quote.chosenPaymentTermKey ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`}>
+                        {pt.title}{pt.key === quote.chosenPaymentTermKey ? " \u2713" : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
@@ -469,7 +503,7 @@ export default function QuoteDetailPage() {
                   </div>
                 </div>
                 <div className="mt-2">
-                  <input value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} placeholder="Beschreibung (optional)" className="w-full px-2 py-1.5 border border-border rounded text-sm" />
+                  <textarea value={line.description || ""} onChange={e => updateLine(idx, "description", e.target.value)} placeholder="Beschreibung (optional)" rows={2} className="w-full px-2 py-1.5 border border-border rounded text-sm resize-y min-h-[38px]" />
                 </div>
               </div>
             ))}

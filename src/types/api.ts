@@ -169,6 +169,9 @@ export interface QuoteDetail {
   primaryContactEmail?: string | null;
   lines: QuoteLine[];
   legalTextBlockKeys?: string[] | null;
+  paymentTermKeys?: string[] | null;
+  paymentTermOptions?: { id: Id; key: string; title: string; content: string; sortOrder: number }[] | null;
+  chosenPaymentTermKey?: string | null;
 }
 
 

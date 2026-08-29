@@ -465,6 +465,11 @@ deleteServiceItem: (id: string) =>
   createLegalText: (data: any) => apiFetch<any>("/legaltexts", { method: "POST", body: JSON.stringify(data) }),
   updateLegalText: (id: string, data: any) => apiFetch<any>(`/legaltexts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteLegalText: (id: string) => apiFetch<any>(`/legaltexts/${id}`, { method: "DELETE" }),
+  // Payment Terms
+  paymentTerms: () => apiFetch<any>("/paymentterms"),
+  createPaymentTerm: (data: any) => apiFetch<any>("/paymentterms", { method: "POST", body: JSON.stringify(data) }),
+  updatePaymentTerm: (id: string, data: any) => apiFetch<any>(`/paymentterms/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deletePaymentTerm: (id: string) => apiFetch<any>(`/paymentterms/${id}`, { method: "DELETE" }),
   // Journal
   journalEntries: (params = "") => apiFetch<any>(`/journal?${params}`),
   createJournalEntry: (data: any) => apiFetch<any>("/journal", { method: "POST", body: JSON.stringify(data) }),
