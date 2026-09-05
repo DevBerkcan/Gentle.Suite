@@ -447,6 +447,7 @@ export default function SubscriptionsPage() {
               <th className="px-4 py-3 text-left text-xs text-muted">Kunde</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Plan</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
+              <th className="px-4 py-3 text-left text-xs text-muted">Rechnungsstellung</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Mandats-E-Mail</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Start</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Nächste Abrechnung</th>
@@ -466,6 +467,13 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
+                  </td>
+                  <td className="px-4 py-3 text-xs">
+                    {sub.billingAuthorizedAt ? (
+                      <div><span className="font-medium text-success">Autorisiert</span><div className="mt-1 text-muted">seit {new Date(sub.billingAuthorizedAt).toLocaleDateString("de")}</div></div>
+                    ) : (
+                      <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700">Wartet auf Rechnungsstellung</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {sub.mandateEmailStatus === "Sent" ? (
@@ -506,7 +514,7 @@ export default function SubscriptionsPage() {
                 </tr>
                 {expandedSubId === sub.id && (
                   <tr>
-                    <td colSpan={9} className="bg-gray-50 px-6 py-4">
+                    <td colSpan={10} className="bg-gray-50 px-6 py-4">
                       <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Serienrechnungen</p>
                       {subInvoices[sub.id] === undefined ? (
                         <p className="text-xs text-gray-400">Laden...</p>

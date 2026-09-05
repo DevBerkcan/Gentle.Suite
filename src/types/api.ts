@@ -69,6 +69,10 @@ export interface CustomerDetail {
   contacts?: Contact[];
   locations?: Location[];
   desiredServiceIds?: Id[];
+  dataSource?: string | null;
+  dataSourceNote?: string | null;
+  privacyNoticeSentAt?: string | null;
+  privacyNoticeVersion?: string | null;
 }
 
 export interface DuplicateHit {
@@ -368,6 +372,7 @@ export interface CustomerSubscription {
   mandateEmailStatus?: string | null;
   mandateEmailLastError?: string | null;
   mandateEmailAttemptCount: number;
+  billingAuthorizedAt?: string | null;
 }
 
 export interface EligibleSubscriptionQuote {
