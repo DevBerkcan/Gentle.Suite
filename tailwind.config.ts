@@ -13,6 +13,7 @@ const config: Config = {
           DEFAULT: "rgb(var(--color-primary) / <alpha-value>)",
           hover:   "rgb(var(--color-primary-hover) / <alpha-value>)",
         },
+        accent: "rgb(var(--color-accent) / <alpha-value>)",
         success: "rgb(var(--color-success) / <alpha-value>)",
         warning: "rgb(var(--color-warning) / <alpha-value>)",
         danger:  "rgb(var(--color-danger) / <alpha-value>)",

@@ -1,3 +1,5 @@
+@import url('https://api.fontshare.com/v2/css?f[]=clash-display@500,600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -8,11 +10,25 @@
   --color-text:          16 24 40;
   --color-muted:         102 112 133;
   --color-border:        234 236 240;
-  --color-primary:       52 64 84;
-  --color-primary-hover: 29 41 57;
+  /* Brand navy (matches gentlegroup.de) — replaces the previous slate-blue primary */
+  --color-primary:       1 10 48;
+  --color-primary-hover: 7 20 61;
+  /* Brand lime — used sparingly as an accent, never as a button fill (poor contrast with white text) */
+  --color-accent:        215 255 63;
   --color-success:       2 122 72;
   --color-warning:       181 71 8;
   --color-danger:        180 35 24;
+}
+
+.brand-logo {
+  font-family: 'Clash Display', 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.brand-logo sup {
+  font-size: 0.5em;
 }
 
 [data-theme="dark"] {

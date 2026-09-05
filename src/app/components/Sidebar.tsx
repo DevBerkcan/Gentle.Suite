@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, FolderKanban, RefreshCw, Clock, Settings, PackageOpen, Mail, FileStack, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, BarChart2, CalendarDays, Search, CreditCard } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -48,49 +47,47 @@ export default function Sidebar() {
 
   const isActive = (href: string) => pathname === href || (href !== "/dashboard" && pathname.startsWith(href + "/"));
 
+  const linkCls = (href: string) =>
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+      isActive(href) ? "bg-white/10 text-accent" : "text-white/70 hover:bg-white/5 hover:text-white"
+    }`;
+
   return (
-    <aside className="w-64 bg-surface border-r border-border p-6 flex flex-col shrink-0">
+    <aside className="w-64 bg-[#010a30] p-6 flex flex-col shrink-0">
       <Link href="/dashboard" className="mb-8 block">
-        <div className="relative h-20 w-full overflow-hidden">
-          <Image
-            src="/logo.png"
-            alt="GentleSuite"
-            fill
-            priority
-            sizes="220px"
-            className="object-contain scale-[1.8] origin-center"
-          />
-        </div>
+        <span className="brand-logo text-xl text-white">
+          Gentle Suite<sup>®</sup>
+        </span>
       </Link>
 
       <nav className="space-y-1 flex-1">
         {mainNav.map(n => (
-          <Link key={n.href} href={n.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(n.href) ? "bg-primary/10 text-primary" : "text-text hover:bg-background"}`}>
+          <Link key={n.href} href={n.href} className={linkCls(n.href)}>
             <n.icon className="w-4 h-4" />{n.label}
           </Link>
         ))}
 
-        <div className="pt-4 mt-4 border-t border-border">
-          <p className="text-xs text-muted font-medium uppercase tracking-wide mb-2 px-3">Buchhaltung</p>
+        <div className="pt-4 mt-4 border-t border-white/10">
+          <p className="text-xs text-white/40 font-medium uppercase tracking-wide mb-2 px-3">Buchhaltung</p>
           {accountingNav.map(n => (
-            <Link key={n.href} href={n.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(n.href) ? "bg-primary/10 text-primary" : "text-text hover:bg-background"}`}>
+            <Link key={n.href} href={n.href} className={linkCls(n.href)}>
               <n.icon className="w-4 h-4" />{n.label}
             </Link>
           ))}
         </div>
 
-        <div className="pt-4 mt-4 border-t border-border">
-          <p className="text-xs text-muted font-medium uppercase tracking-wide mb-2 px-3">Verwaltung</p>
+        <div className="pt-4 mt-4 border-t border-white/10">
+          <p className="text-xs text-white/40 font-medium uppercase tracking-wide mb-2 px-3">Verwaltung</p>
           {adminNav.map(n => (
-            <Link key={n.href} href={n.href} className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive(n.href) ? "bg-primary/10 text-primary" : "text-text hover:bg-background"}`}>
+            <Link key={n.href} href={n.href} className={linkCls(n.href)}>
               <n.icon className="w-4 h-4" />{n.label}
             </Link>
           ))}
         </div>
       </nav>
 
-      <div className="pt-4 border-t border-border">
-        <Link href="/settings" className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${isActive("/settings") ? "bg-primary/10 text-primary" : "text-text hover:bg-background"}`}>
+      <div className="pt-4 border-t border-white/10">
+        <Link href="/settings" className={linkCls("/settings")}>
           <Settings className="w-4 h-4" />Einstellungen
         </Link>
       </div>
