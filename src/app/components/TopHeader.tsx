@@ -90,11 +90,13 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle }: Props)
 
   return (
     <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-6 shrink-0 z-40">
-      {/* Left — hamburger on mobile */}
+      {/* Left — hamburger on mobile, brand wordmark on desktop */}
       <button onClick={onMenuToggle} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-muted hover:text-text">
         <Menu className="w-5 h-5" />
       </button>
-      <div className="hidden md:block" />
+      <Link href="/dashboard" className="hidden md:block brand-logo text-lg text-primary">
+        Gentle Suite<sup>®</sup>
+      </Link>
 
       {/* Right actions */}
       <div className="flex items-center gap-2">

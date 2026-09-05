@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "../styles/globals.css";
 import AppShell from "./components/AppShell";
 
-export const metadata: Metadata = { title: "GentleSuite", description: "Agentur-Management System", icons: { icon: "/logo.png" } };
+export const metadata: Metadata = { title: "GentleSuite", description: "Agentur-Management System" };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

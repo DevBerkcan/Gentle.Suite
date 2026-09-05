@@ -21,7 +21,7 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-primary">GentleSuite</h1>
+          <h1 className="brand-logo text-3xl text-primary">Gentle Suite<sup>®</sup></h1>
           <p className="text-muted mt-2">Agentur-Management System</p>
         </div>
         <form onSubmit={handleLogin} className="bg-surface rounded-xl border border-border p-8 shadow-sm">

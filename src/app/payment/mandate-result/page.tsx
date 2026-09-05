@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 import { Check, CreditCard, LockKeyhole } from "lucide-react";
 
 export const metadata: Metadata = {
@@ -21,18 +20,11 @@ export default function MandateResultPage() {
 
       <div className="mx-auto flex min-h-[calc(100vh-4rem)] max-w-2xl flex-col sm:min-h-[calc(100vh-6rem)]">
         <header className="flex items-center justify-center gap-3 py-3">
-          <div className="relative h-12 w-16 overflow-hidden rounded-lg bg-black shadow-sm">
-            <Image
-              src="/logo.png"
-              alt="GentleSuite Logo"
-              fill
-              priority
-              sizes="64px"
-              className="object-contain scale-[1.65]"
-            />
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-[#010a30] shadow-sm">
+            <span className="brand-logo text-xl text-accent">G</span>
           </div>
           <div>
-            <p className="text-lg font-semibold tracking-tight text-text">GentleSuite</p>
+            <p className="brand-logo text-lg text-text">Gentle Suite<sup>®</sup></p>
             <p className="text-xs text-muted">Sichere Zahlungseinrichtung</p>
           </div>
         </header>

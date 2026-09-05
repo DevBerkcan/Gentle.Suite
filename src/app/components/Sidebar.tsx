@@ -53,13 +53,7 @@ export default function Sidebar() {
     }`;
 
   return (
-    <aside className="w-64 bg-[#010a30] p-6 flex flex-col shrink-0">
-      <Link href="/dashboard" className="mb-8 block">
-        <span className="brand-logo text-xl text-white">
-          Gentle Suite<sup>®</sup>
-        </span>
-      </Link>
-
+    <aside className="w-64 bg-[#010a30] p-6 pt-8 flex flex-col shrink-0">
       <nav className="space-y-1 flex-1">
         {mainNav.map(n => (
           <Link key={n.href} href={n.href} className={linkCls(n.href)}>
