@@ -53,7 +53,7 @@ export default function Sidebar() {
     }`;
 
   return (
-    <aside className="w-64 bg-[#010a30] p-6 pt-8 flex flex-col shrink-0">
+    <aside className="w-64 bg-black/90 backdrop-blur-md p-6 pt-8 flex flex-col shrink-0">
       <nav className="space-y-1 flex-1">
         {mainNav.map(n => (
           <Link key={n.href} href={n.href} className={linkCls(n.href)}>
