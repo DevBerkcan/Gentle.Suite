@@ -6,6 +6,14 @@ import { Trash2 } from "lucide-react";
 
 type Tab = "overview" | "contacts" | "notes" | "onboarding" | "activity" | "pricelists" | "opportunities" | "tickets" | "crmactivities" | "documents";
 
+const DATA_SOURCE_LABELS: Record<string, string> = {
+  Inbound: "Kunde hat angefragt",
+  Referral: "Empfehlung",
+  Campaign: "Kampagne/Werbung",
+  Direct: "Direkt/persönlich bekannt",
+  Other: "Sonstige",
+};
+
 export default function CustomerDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -78,6 +86,17 @@ export default function CustomerDetailPage() {
   }, [id]);
 
   const loadCustomer = () => api.customer(id).then((c) => { setCustomer(c); setReminderStop(!!c.reminderStop); }).catch(() => setError("Kunde nicht gefunden"));
+
+  async function handleMarkPrivacyNoticeSent() {
+    const version = window.prompt("Version des bereitgestellten Datenschutzhinweises (z.B. Datum oder Versionsnummer):", new Date().toISOString().slice(0, 10));
+    if (!version) return;
+    try {
+      await api.markPrivacyNoticeSent(id, { version });
+      setSuccess("Datenschutzhinweis als bereitgestellt vermerkt");
+      setTimeout(() => setSuccess(""), 4000);
+      loadCustomer();
+    } catch (e: any) { setError(e?.message || "Fehler beim Speichern"); }
+  }
   const loadNotes = () => api.notes(id).then(setNotes).catch(() => {});
   const loadActivity = () => api.activity(id).then(setActivities).catch(() => {});
   const loadSubscriptions = () => api.customerSubs(id).then(setSubscriptions).catch(() => {});
@@ -375,6 +394,14 @@ export default function CustomerDetailPage() {
                 <div className="flex justify-between"><span className="text-muted">Steuer-Nr.</span><span>{customer.taxId || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted">USt-ID</span><span>{customer.vatId || "—"}</span></div>
                 <div className="flex justify-between"><span className="text-muted">Mahnwesen</span><span>{reminderStop ? "Gestoppt" : "Aktiv"}</span></div>
+                <div className="flex justify-between"><span className="text-muted">Datenquelle</span><span>{DATA_SOURCE_LABELS[customer.dataSource as string] || "—"}{customer.dataSourceNote ? ` (${customer.dataSourceNote})` : ""}</span></div>
+                <div className="flex justify-between items-center"><span className="text-muted">Datenschutzhinweis</span>
+                  {customer.privacyNoticeSentAt ? (
+                    <span>bereitgestellt am {new Date(customer.privacyNoticeSentAt).toLocaleDateString("de")} (V. {customer.privacyNoticeVersion})</span>
+                  ) : (
+                    <button onClick={handleMarkPrivacyNoticeSent} className="text-xs text-primary hover:underline">Als bereitgestellt vermerken</button>
+                  )}
+                </div>
                 <div className="flex justify-between"><span className="text-muted">Erstellt</span><span>{new Date(customer.createdAt).toLocaleDateString("de")}</span></div>
               </div>
             )}

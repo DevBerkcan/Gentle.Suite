@@ -25,7 +25,15 @@ const STATUS_LABEL: Record<string, string> = {
 };
 
 const PAGE_SIZE_OPTIONS = [10, 20, 50];
-const defaultForm = { companyName: "", industry: "", website: "", taxId: "", vatId: "", primaryContact: { firstName: "", lastName: "", email: "", phone: "", position: "" }, primaryLocation: { label: "Hauptsitz", street: "", city: "", zipCode: "", country: "Deutschland" } };
+const defaultForm = { companyName: "", industry: "", website: "", taxId: "", vatId: "", dataSource: "", dataSourceNote: "", primaryContact: { firstName: "", lastName: "", email: "", phone: "", position: "" }, primaryLocation: { label: "Hauptsitz", street: "", city: "", zipCode: "", country: "Deutschland" } };
+
+const DATA_SOURCE_OPTIONS = [
+  { value: "Inbound", label: "Kunde hat angefragt (Inbound)" },
+  { value: "Referral", label: "Empfehlung" },
+  { value: "Campaign", label: "Kampagne/Werbung" },
+  { value: "Direct", label: "Direkt/persönlich bekannt" },
+  { value: "Other", label: "Sonstige (z.B. öffentliche Website recherchiert)" },
+];
 
 export default function CustomersPage() {
   const router = useRouter();
@@ -217,6 +225,17 @@ export default function CustomersPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div><label className="block text-sm font-medium mb-1">Firma *</label><input required value={form.companyName} onChange={e => setForm({ ...form, companyName: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg" /></div>
                 <div><label className="block text-sm font-medium mb-1">Branche</label><input value={form.industry} onChange={e => setForm({ ...form, industry: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg" /></div>
+              </div>
+              <h3 className="font-semibold">Datenherkunft</h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-1">Woher stammen die Daten? *</label>
+                  <select required value={form.dataSource} onChange={e => setForm({ ...form, dataSource: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg">
+                    <option value="">Bitte wählen...</option>
+                    {DATA_SOURCE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                  </select>
+                </div>
+                <div><label className="block text-sm font-medium mb-1">Notiz zur Herkunft</label><input placeholder="z.B. Firmenwebsite, Messe XY..." value={form.dataSourceNote} onChange={e => setForm({ ...form, dataSourceNote: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg" /></div>
               </div>
               <h3 className="font-semibold">Ansprechpartner</h3>
               <div className="grid grid-cols-2 gap-4">

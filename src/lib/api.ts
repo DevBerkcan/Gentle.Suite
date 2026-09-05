@@ -166,6 +166,7 @@ export const api = {
   createCustomer: (data: any) => apiFetch<CustomerDetail>("/customers", { method: "POST", body: JSON.stringify(data) }).then(normalizeCustomer),
   updateCustomer: (id: string, data: any) => apiFetch<CustomerDetail>(`/customers/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeCustomer),
   checkCustomerDuplicate: (data: any) => apiFetch<DuplicateCheckResult>("/customers/check-duplicate", { method: "POST", body: JSON.stringify(data) }),
+  markPrivacyNoticeSent: (id: string, data: { version: string }) => apiFetch<any>(`/customers/${id}/privacy-notice-sent`, { method: "POST", body: JSON.stringify(data) }),
   deleteCustomer: (id: string) => apiFetch<any>(`/customers/${id}`, { method: "DELETE" }),
   setCustomerReminderStop: (id: string, reminderStop: boolean) => apiFetch<any>(`/customers/${id}/reminder-stop`, { method: "PUT", body: JSON.stringify({ reminderStop }) }),
   gdprExportCustomer: (id: string) => apiFetch<GdprExport>(`/customers/${id}/gdpr-export`, { method: "POST" }),
