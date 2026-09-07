@@ -12,12 +12,16 @@ const TYPE_LABELS: Record<string, string> = {
   milestone: "Meilenstein",
   activity: "Aktivität",
   subscription: "Serienrechnung",
+  installment: "Ratenzahlung",
+  "quote-expiring": "Angebot läuft ab",
 };
 const TYPE_COLORS: Record<string, string> = {
   invoice: "bg-red-500",
   milestone: "bg-blue-500",
   activity: "bg-green-500",
   subscription: "bg-purple-500",
+  installment: "bg-pink-500",
+  "quote-expiring": "bg-amber-500",
 };
 
 export default function CalendarPage() {
