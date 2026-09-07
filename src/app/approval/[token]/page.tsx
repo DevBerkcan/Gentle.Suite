@@ -475,6 +475,25 @@ export default function ApprovalPage() {
           </div>
         )}
 
+        {(quote?.legalTextBlockOptions?.length ?? 0) > 0 && (
+          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
+            <h2 className="text-lg font-semibold mb-1">Beigefügte Rechtsdokumente</h2>
+            <p className="text-slate-400 text-xs mb-4">Diese Dokumente sind Teil dieses Angebots.</p>
+            <div className="space-y-2">
+              {quote!.legalTextBlockOptions!.map((lt: any) => (
+                <div key={lt.key} className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-[#1a1f2e] px-4 py-3 text-sm">
+                  <span className="text-white">{lt.title}</span>
+                  {lt.attachmentFileName ? (
+                    <a href={`${API}/api/approval/${token}/legal/${lt.key}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline text-xs shrink-0">{lt.attachmentFileName} herunterladen</a>
+                  ) : (
+                    <span className="text-slate-400 text-xs shrink-0">siehe Angebots-PDF</span>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {(quote?.paymentTermOptions?.length ?? 0) > 0 && (
           <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
             <h2 className="text-lg font-semibold mb-1">Zahlungsbedingung wählen *</h2>

@@ -173,6 +173,7 @@ export interface QuoteDetail {
   primaryContactEmail?: string | null;
   lines: QuoteLine[];
   legalTextBlockKeys?: string[] | null;
+  legalTextBlockOptions?: { id: Id; key: string; title: string; content: string; sortOrder: number; type: string; autoAttachToQuotes: boolean; attachmentFileName?: string | null }[] | null;
   paymentTermKeys?: string[] | null;
   paymentTermOptions?: { id: Id; key: string; title: string; content: string; sortOrder: number }[] | null;
   chosenPaymentTermKey?: string | null;

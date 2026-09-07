@@ -36,7 +36,7 @@ const adminNav: NavItem[] = [
   { href: "/services", label: "Leistungen", icon: PackageOpen },
   { href: "/templates", label: "Vorlagen", icon: FileStack },
   { href: "/onboarding", label: "Onboarding", icon: ClipboardCheck },
-  { href: "/legal-texts", label: "Rechtstexte", icon: Scale },
+  { href: "/legal-texts", label: "Rechtliches", icon: Scale },
   { href: "/payment-terms", label: "Zahlungsbedingungen", icon: CreditCard },
   { href: "/email-templates", label: "E-Mail-Vorlagen", icon: Mail },
   { href: "/emails", label: "E-Mail-Protokoll", icon: Mail },

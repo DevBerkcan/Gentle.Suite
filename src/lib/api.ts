@@ -29,6 +29,7 @@ import {
   EXPENSE_STATUS,
   INVOICE_STATUS,
   INVOICE_TYPE,
+  LEGAL_DOCUMENT_TYPE,
   NOTE_TYPE,
   PROJECT_STATUS,
   PROJECT_BOARD_TASK_STATUS,
@@ -87,6 +88,11 @@ function normalizeQuoteLine(line: any) {
   return { ...line, lineType: enumValue(line.lineType, QUOTE_LINE_TYPE), discountPercent: Number(line.discountPercent || 0) };
 }
 
+function normalizeLegalText(item: any) {
+  if (!item) return item;
+  return { ...item, type: enumValue(item.type, LEGAL_DOCUMENT_TYPE) };
+}
+
 function normalizeQuote(item: any) {
   if (!item) return item;
   return {
@@ -95,6 +101,7 @@ function normalizeQuote(item: any) {
     signatureStatus: enumValue(item.signatureStatus, SIGNATURE_STATUS),
     taxMode: enumValue(item.taxMode, TAX_MODE),
     lines: Array.isArray(item.lines) ? item.lines.map(normalizeQuoteLine) : item.lines,
+    legalTextBlockOptions: Array.isArray(item.legalTextBlockOptions) ? item.legalTextBlockOptions.map(normalizeLegalText) : item.legalTextBlockOptions,
   };
 }
 
@@ -466,10 +473,24 @@ deleteServiceItem: (id: string) =>
   // Email Log
   emailLogs: (params = "") => apiFetch<any>(`/emails?${params}`),
   // Legal Texts
-  legalTexts: () => apiFetch<any>("/legaltexts"),
-  createLegalText: (data: any) => apiFetch<any>("/legaltexts", { method: "POST", body: JSON.stringify(data) }),
-  updateLegalText: (id: string, data: any) => apiFetch<any>(`/legaltexts/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  legalTexts: () => apiFetch<any[]>("/legaltexts").then((list) => Array.isArray(list) ? list.map(normalizeLegalText) : list),
+  createLegalText: (data: any) => apiFetch<any>("/legaltexts", { method: "POST", body: JSON.stringify(data) }).then(normalizeLegalText),
+  updateLegalText: (id: string, data: any) => apiFetch<any>(`/legaltexts/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeLegalText),
   deleteLegalText: (id: string) => apiFetch<any>(`/legaltexts/${id}`, { method: "DELETE" }),
+  uploadLegalTextAttachment: async (id: string, file: File) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const fd = new FormData(); fd.append("file", file);
+    const res = await fetch(`${API}/api/legaltexts/${id}/attachment`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd });
+    if (!res.ok) throw new Error(await res.text());
+    return normalizeLegalText(await res.json());
+  },
+  deleteLegalTextAttachment: (id: string) => apiFetch<any>(`/legaltexts/${id}/attachment`, { method: "DELETE" }).then(normalizeLegalText),
+  legalTextAttachmentBlob: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`${API}/api/legaltexts/${id}/attachment`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error(await res.text());
+    return res.blob();
+  },
   // Payment Terms
   paymentTerms: () => apiFetch<any>("/paymentterms"),
   createPaymentTerm: (data: any) => apiFetch<any>("/paymentterms", { method: "POST", body: JSON.stringify(data) }),

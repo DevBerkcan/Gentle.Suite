@@ -88,9 +88,10 @@ export default function QuoteDetailPage() {
   const [plans, setPlans] = useState<any[]>([]);
   const [versions, setVersions] = useState<any[]>([]);
   const [paymentTermCatalog, setPaymentTermCatalog] = useState<any[]>([]);
+  const [legalTextCatalog, setLegalTextCatalog] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
-  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[], installmentPeriodOptionsMonths: [] as number[] });
+  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[], installmentPeriodOptionsMonths: [] as number[], legalTextBlockKeys: [] as string[] });
   const [deactivating, setDeactivating] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 14 });
@@ -103,6 +104,7 @@ export default function QuoteDetailPage() {
     api.services().then(setCategories).catch(() => {});
     api.plans().then(setPlans).catch(() => {});
     api.paymentTerms().then(setPaymentTermCatalog).catch(() => {});
+    api.legalTexts().then(setLegalTextCatalog).catch(() => {});
   }, [id]);
 
   function loadQuote() {
@@ -205,6 +207,7 @@ export default function QuoteDetailPage() {
       taxRate: quote.taxRate ?? 19,
       paymentTermKeys: quote.paymentTermKeys || [],
       installmentPeriodOptionsMonths: quote.installmentPeriodOptionsMonths || [],
+      legalTextBlockKeys: quote.legalTextBlockKeys || [],
     });
     setEditingHeader(true);
   }
@@ -213,6 +216,13 @@ export default function QuoteDetailPage() {
     setHeaderForm(f => ({
       ...f,
       paymentTermKeys: f.paymentTermKeys.includes(key) ? f.paymentTermKeys.filter(k => k !== key) : [...f.paymentTermKeys, key],
+    }));
+  }
+
+  function toggleLegalTextKey(key: string) {
+    setHeaderForm(f => ({
+      ...f,
+      legalTextBlockKeys: f.legalTextBlockKeys.includes(key) ? f.legalTextBlockKeys.filter(k => k !== key) : [...f.legalTextBlockKeys, key],
     }));
   }
 
@@ -383,6 +393,23 @@ export default function QuoteDetailPage() {
                   {paymentTermCatalog.length === 0 && <p className="text-xs text-muted">Keine Zahlungsbedingungen im Katalog hinterlegt. Unter "Verwaltung \u2192 Zahlungsbedingungen" anlegen.</p>}
                 </div>
               </div>
+              <div>
+                <label className="text-xs text-muted block mb-1">Rechtliches (z. B. Wartungsvertrag zusätzlich anhängen)</label>
+                <div className="space-y-1.5 border border-border rounded p-2 max-h-40 overflow-auto">
+                  {legalTextCatalog.filter((lt: any) => !lt.autoAttachToQuotes).map((lt: any) => (
+                    <label key={lt.key} className="flex items-start gap-2 text-sm">
+                      <input type="checkbox" className="mt-0.5" checked={headerForm.legalTextBlockKeys.includes(lt.key)} onChange={() => toggleLegalTextKey(lt.key)} />
+                      <span>{lt.title}{lt.attachmentFileName ? ` (Datei: ${lt.attachmentFileName})` : ""}</span>
+                    </label>
+                  ))}
+                  {legalTextCatalog.filter((lt: any) => !lt.autoAttachToQuotes).length === 0 && <p className="text-xs text-muted">Keine zusätzlichen Rechtsdokumente hinterlegt. Unter "Verwaltung → Rechtliches" anlegen.</p>}
+                </div>
+                {legalTextCatalog.filter((lt: any) => lt.autoAttachToQuotes).length > 0 && (
+                  <p className="mt-1 text-xs text-muted">
+                    Wird automatisch mitgeschickt: {legalTextCatalog.filter((lt: any) => lt.autoAttachToQuotes).map((lt: any) => lt.title).join(", ")}
+                  </p>
+                )}
+              </div>
               {(quote.subtotalOneTime || 0) > 0 && (
                 <div>
                   <label className="text-xs text-muted block mb-1">Ratenzahlung anbieten (einmalige Positionen)</label>
@@ -415,6 +442,18 @@ export default function QuoteDetailPage() {
                     {quote.paymentTermOptions.map((pt: any) => (
                       <span key={pt.key} className={`text-xs px-2 py-0.5 rounded-full ${pt.key === quote.chosenPaymentTermKey ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`}>
                         {pt.title}{pt.key === quote.chosenPaymentTermKey ? " \u2713" : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {quote.legalTextBlockOptions?.length > 0 && (
+                <div>
+                  <span className="text-muted block mb-1">Rechtliches</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quote.legalTextBlockOptions.map((lt: any) => (
+                      <span key={lt.key} className="text-xs px-2 py-0.5 rounded-full bg-gray-100 text-muted" title={lt.attachmentFileName ? `Anhang: ${lt.attachmentFileName}` : undefined}>
+                        {lt.title}{lt.attachmentFileName ? " 📎" : ""}
                       </span>
                     ))}
                   </div>

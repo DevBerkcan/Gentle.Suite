@@ -33,3 +33,6 @@ export type ProjectBoardTaskStatus = typeof PROJECT_BOARD_TASK_STATUS[number];
 
 export const SUBSCRIPTION_STATUS = ["Active", "Paused", "Cancelled", "Expired", "PendingConfirmation", "Completed"] as const;
 export type SubscriptionStatus = typeof SUBSCRIPTION_STATUS[number];
+
+export const LEGAL_DOCUMENT_TYPE = ["Agb", "Datenschutz", "Vertrag", "Sonstiges"] as const;
+export type LegalDocumentType = typeof LEGAL_DOCUMENT_TYPE[number];
