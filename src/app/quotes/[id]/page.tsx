@@ -89,7 +89,7 @@ export default function QuoteDetailPage() {
   const [paymentTermCatalog, setPaymentTermCatalog] = useState<any[]>([]);
   const [editing, setEditing] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
-  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[] });
+  const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[], installmentPeriodOptionsMonths: [] as number[] });
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 30 });
   const [error, setError] = useState("");
@@ -202,6 +202,7 @@ export default function QuoteDetailPage() {
       taxMode: quote.taxMode || "Standard",
       taxRate: quote.taxRate ?? 19,
       paymentTermKeys: quote.paymentTermKeys || [],
+      installmentPeriodOptionsMonths: quote.installmentPeriodOptionsMonths || [],
     });
     setEditingHeader(true);
   }
@@ -210,6 +211,15 @@ export default function QuoteDetailPage() {
     setHeaderForm(f => ({
       ...f,
       paymentTermKeys: f.paymentTermKeys.includes(key) ? f.paymentTermKeys.filter(k => k !== key) : [...f.paymentTermKeys, key],
+    }));
+  }
+
+  function toggleInstallmentMonths(months: number) {
+    setHeaderForm(f => ({
+      ...f,
+      installmentPeriodOptionsMonths: f.installmentPeriodOptionsMonths.includes(months)
+        ? f.installmentPeriodOptionsMonths.filter(m => m !== months)
+        : [...f.installmentPeriodOptionsMonths, months].sort((a, b) => a - b),
     }));
   }
 
@@ -362,6 +372,20 @@ export default function QuoteDetailPage() {
                   {paymentTermCatalog.length === 0 && <p className="text-xs text-muted">Keine Zahlungsbedingungen im Katalog hinterlegt. Unter "Verwaltung \u2192 Zahlungsbedingungen" anlegen.</p>}
                 </div>
               </div>
+              {(quote.subtotalOneTime || 0) > 0 && (
+                <div>
+                  <label className="text-xs text-muted block mb-1">Ratenzahlung anbieten (einmalige Positionen)</label>
+                  <div className="flex flex-wrap gap-2 border border-border rounded p-2">
+                    {[6, 12, 24, 36].map(m => (
+                      <label key={m} className="flex items-center gap-1.5 text-sm px-2 py-1 border border-border rounded">
+                        <input type="checkbox" checked={headerForm.installmentPeriodOptionsMonths.includes(m)} onChange={() => toggleInstallmentMonths(m)} />
+                        <span>{m} Monate</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-muted">Der Kunde kann bei der Unterschrift w\u00e4hlen, ob er sofort zahlt oder in dieser Anzahl Monatsraten.</p>
+                </div>
+              )}
               <div className="flex gap-2">
                 <button onClick={saveHeader} className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm">Speichern</button>
                 <button onClick={() => setEditingHeader(false)} className="px-3 py-1.5 border border-border rounded-lg text-sm">Abbrechen</button>
@@ -380,6 +404,21 @@ export default function QuoteDetailPage() {
                     {quote.paymentTermOptions.map((pt: any) => (
                       <span key={pt.key} className={`text-xs px-2 py-0.5 rounded-full ${pt.key === quote.chosenPaymentTermKey ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`}>
                         {pt.title}{pt.key === quote.chosenPaymentTermKey ? " \u2713" : ""}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {quote.installmentPeriodOptionsMonths?.length > 0 && (
+                <div>
+                  <span className="text-muted block mb-1">Ratenzahlung</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${quote.chosenInstallmentMonths == null ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`}>
+                      Sofort{quote.chosenInstallmentMonths == null && quote.signedAt ? " ✓" : ""}
+                    </span>
+                    {quote.installmentPeriodOptionsMonths.map((m: number) => (
+                      <span key={m} className={`text-xs px-2 py-0.5 rounded-full ${m === quote.chosenInstallmentMonths ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`}>
+                        {m} Monatsraten{m === quote.chosenInstallmentMonths ? " ✓" : ""}
                       </span>
                     ))}
                   </div>

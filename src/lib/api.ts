@@ -405,6 +405,7 @@ deleteServiceItem: (id: string) =>
   updatePlan: (id: string, data: any) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deletePlan: (id: string) => apiFetch<any>(`/subscriptions/plans/${id}`, { method: "DELETE" }),
   triggerSubscriptionInvoices: () => apiFetch<void>("/system/trigger-subscription-invoices", { method: "POST" }),
+  billSubscriptionNow: (id: string) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/bill-now`, { method: "POST" }).then(normalizeSubscription),
   triggerBankSync: () => apiFetch<void>("/system/trigger-bank-sync", { method: "POST" }),
   // Integrations (PayPal + GoCardless / Fyrst)
   integrationSettings: () => apiFetch<any>("/integrations"),

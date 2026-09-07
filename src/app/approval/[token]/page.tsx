@@ -2,13 +2,22 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Document, Page, pdfjs } from "react-pdf";
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+import dynamic from "next/dynamic";
+import PdfPreviewBoundary from "./PdfPreviewBoundary";
 import { api } from "@/lib/api";
 import type { QuoteDetail } from "@/types/api";
 
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// react-pdf/pdfjs-dist relies on browser-only globals and crashes if its module graph is evaluated
+// during Next.js's server-side render pass (which happens even for "use client" components) — loading it
+// only on the client via next/dynamic avoids that entirely. See PdfPreview.tsx.
+const PdfPreview = dynamic(() => import("./PdfPreview"), {
+  ssr: false,
+  loading: () => (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+    </div>
+  ),
+});
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
@@ -25,6 +34,8 @@ export default function ApprovalPage() {
   const [signerEmail, setSignerEmail] = useState("");
   const [b2bAuthorityConfirmed, setB2bAuthorityConfirmed] = useState(false);
   const [chosenPaymentTermKey, setChosenPaymentTermKey] = useState("");
+  const [chosenInstallmentMonths, setChosenInstallmentMonths] = useState<number | null>(null);
+  const [installmentChoiceMade, setInstallmentChoiceMade] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
@@ -206,6 +217,10 @@ export default function ApprovalPage() {
       alert("Bitte wählen Sie eine Zahlungsbedingung aus.");
       return;
     }
+    if ((quote?.installmentPeriodOptionsMonths?.length ?? 0) > 0 && (quote?.subtotalOneTime ?? 0) > 0 && !installmentChoiceMade) {
+      alert("Bitte wählen Sie eine Zahlungsweise aus.");
+      return;
+    }
     const sigData = getSignatureDataUrl();
     if (!sigData) {
       alert("Bitte unterschreiben Sie im Feld.");
@@ -220,6 +235,7 @@ export default function ApprovalPage() {
         signedByEmail: signerEmail.trim(),
         b2bAuthorityConfirmed,
         chosenPaymentTermKey: chosenPaymentTermKey || undefined,
+        chosenInstallmentMonths: chosenInstallmentMonths ?? undefined,
         comment: "",
       });
       setDone(true);
@@ -439,27 +455,15 @@ export default function ApprovalPage() {
                   willChange: "transform",
                 }}
               >
-                <Document
-                  file={pdfBlobUrl}
-                  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
-                  onLoadError={() => setPdfLoadError(true)}
-                  loading={
-                    <div className="flex items-center justify-center h-64">
-                      <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  }
-                >
-                  {Array.from({ length: numPages }, (_, i) => (
-                    <div key={i} className="mb-3 shadow-lg">
-                      <Page
-                        pageNumber={i + 1}
-                        scale={scale ?? 1}
-                        renderTextLayer={true}
-                        renderAnnotationLayer={false}
-                      />
-                    </div>
-                  ))}
-                </Document>
+                <PdfPreviewBoundary onError={() => setPdfLoadError(true)} fallback={null}>
+                  <PdfPreview
+                    file={pdfBlobUrl}
+                    numPages={numPages}
+                    scale={scale}
+                    onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                    onLoadError={() => setPdfLoadError(true)}
+                  />
+                </PdfPreviewBoundary>
               </div>
             )}
           </div>
@@ -483,6 +487,37 @@ export default function ApprovalPage() {
                     <span className="block font-medium text-white">{pt.title}</span>
                     <span className="block text-slate-400 mt-0.5">{pt.content}</span>
                   </span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(quote?.installmentPeriodOptionsMonths?.length ?? 0) > 0 && (quote?.subtotalOneTime ?? 0) > 0 && (
+          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
+            <h2 className="text-lg font-semibold mb-1">Zahlungsweise wählen *</h2>
+            <p className="text-slate-400 text-xs mb-4">Sie können den einmaligen Betrag sofort oder in gleichen Monatsraten bezahlen.</p>
+            <div className="space-y-3">
+              <label className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${installmentChoiceMade && chosenInstallmentMonths === null ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                <input
+                  type="radio"
+                  name="installmentChoice"
+                  className="mt-1"
+                  checked={installmentChoiceMade && chosenInstallmentMonths === null}
+                  onChange={() => { setChosenInstallmentMonths(null); setInstallmentChoiceMade(true); }}
+                />
+                <span className="block font-medium text-white">Gesamtbetrag jetzt bezahlen ({quote!.subtotalOneTime!.toFixed(2)} €)</span>
+              </label>
+              {quote!.installmentPeriodOptionsMonths!.map((m: number) => (
+                <label key={m} className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenInstallmentMonths === m ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                  <input
+                    type="radio"
+                    name="installmentChoice"
+                    className="mt-1"
+                    checked={chosenInstallmentMonths === m}
+                    onChange={() => { setChosenInstallmentMonths(m); setInstallmentChoiceMade(true); }}
+                  />
+                  <span className="block font-medium text-white">{m} monatliche Raten à {(quote!.subtotalOneTime! / m).toFixed(2)} €</span>
                 </label>
               ))}
             </div>

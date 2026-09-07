@@ -31,5 +31,5 @@ export type ProjectStatus = typeof PROJECT_STATUS[number];
 export const PROJECT_BOARD_TASK_STATUS = ["Todo", "InProgress", "Done"] as const;
 export type ProjectBoardTaskStatus = typeof PROJECT_BOARD_TASK_STATUS[number];
 
-export const SUBSCRIPTION_STATUS = ["Active", "Paused", "Cancelled", "Expired"] as const;
+export const SUBSCRIPTION_STATUS = ["Active", "Paused", "Cancelled", "Expired", "PendingConfirmation", "Completed"] as const;
 export type SubscriptionStatus = typeof SUBSCRIPTION_STATUS[number];

@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, FolderKanban, RefreshCw, Clock, Settings, PackageOpen, Mail, FileStack, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, BarChart2, CalendarDays, Search, CreditCard } from "lucide-react";
+import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, FolderKanban, RefreshCw, Clock, Settings, PackageOpen, Mail, FileStack, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, BarChart2, CalendarDays, Search, CreditCard, CalendarClock } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
@@ -17,6 +17,7 @@ const mainNav: NavItem[] = [
   { href: "/expenses", label: "Ausgaben", icon: Wallet },
   { href: "/projects", label: "Projekte", icon: FolderKanban },
   { href: "/subscriptions", label: "Serienrechnungen", icon: RefreshCw },
+  { href: "/installments", label: "Ratenzahlungen", icon: CalendarClock },
   { href: "/time", label: "Zeiterfassung", icon: Clock },
   { href: "/calendar", label: "Kalender", icon: CalendarDays },
   { href: "/reports", label: "Berichte", icon: BarChart2 },

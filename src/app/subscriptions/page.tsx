@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, Fragment } from "react";
 import { api } from "@/lib/api";
+import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -90,7 +91,6 @@ export default function SubscriptionsPage() {
 
   // Invoice history state
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
-  const [subInvoices, setSubInvoices] = useState<Record<string, any[]>>({});
 
   // User role (for trigger button)
   const [isAdmin, setIsAdmin] = useState(false);
@@ -159,14 +159,17 @@ export default function SubscriptionsPage() {
     } catch {}
   }, []);
 
+  // Ratenzahlungen werden in einem eigenen Bereich (/installments) verwaltet, nicht hier.
+  const nonInstallmentSubs = subs.filter(s => !s.isInstallmentPlan);
+
   // KPI computations
-  const activeSubs = subs.filter(s => s.status === "Active");
+  const activeSubs = nonInstallmentSubs.filter(s => s.status === "Active");
   const mrrTotal = activeSubs.reduce((sum, s) => sum + (s.monthlyPrice || 0), 0);
   const nextBillingSub = activeSubs
     .filter(s => s.nextBillingDate)
     .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime())[0];
 
-  const filteredSubs = statusFilter === "Alle" ? subs : subs.filter(s => s.status === statusFilter);
+  const filteredSubs = statusFilter === "Alle" ? nonInstallmentSubs : nonInstallmentSubs.filter(s => s.status === statusFilter);
 
   async function handleCustomerChange(customerId: string) {
     setForm(current => ({ ...current, customerId, contractQuoteId: "", businessCustomerConfirmed: false }));
@@ -238,17 +241,8 @@ export default function SubscriptionsPage() {
     }
   }
 
-  async function handleExpandSub(id: string) {
-    if (expandedSubId === id) { setExpandedSubId(null); return; }
-    setExpandedSubId(id);
-    if (!subInvoices[id]) {
-      try {
-        const invoices = await api.subscriptionInvoices(id);
-        setSubInvoices(prev => ({ ...prev, [id]: Array.isArray(invoices) ? invoices : [] }));
-      } catch {
-        setSubInvoices(prev => ({ ...prev, [id]: [] }));
-      }
-    }
+  function handleExpandSub(id: string) {
+    setExpandedSubId(current => (current === id ? null : id));
   }
 
   async function handleTrigger() {
@@ -358,7 +352,7 @@ export default function SubscriptionsPage() {
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted mb-1">Aktive Abonnements</p>
           <p className="text-2xl font-bold">{activeSubs.length}</p>
-          <p className="text-xs text-muted mt-0.5">{subs.length} gesamt</p>
+          <p className="text-xs text-muted mt-0.5">{nonInstallmentSubs.length} gesamt</p>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted mb-1">MRR (aktiv)</p>
@@ -426,7 +420,7 @@ export default function SubscriptionsPage() {
         <h2 className="font-semibold">Abonnements</h2>
         <div className="flex gap-1 bg-background border border-border rounded-lg p-1">
           {STATUS_FILTERS.map(f => {
-            const count = f.key === "Alle" ? subs.length : subs.filter(s => s.status === f.key).length;
+            const count = f.key === "Alle" ? nonInstallmentSubs.length : nonInstallmentSubs.filter(s => s.status === f.key).length;
             return (
               <button
                 key={f.key}
@@ -515,41 +509,12 @@ export default function SubscriptionsPage() {
                 {expandedSubId === sub.id && (
                   <tr>
                     <td colSpan={10} className="bg-gray-50 px-6 py-4">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">Serienrechnungen</p>
-                      {subInvoices[sub.id] === undefined ? (
-                        <p className="text-xs text-gray-400">Laden...</p>
-                      ) : subInvoices[sub.id].length === 0 ? (
-                        <p className="text-xs text-gray-400">Noch keine Rechnungen vorhanden</p>
-                      ) : (
-                        <table className="w-full text-sm bg-white rounded-lg border border-gray-200 overflow-hidden">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Rechnungs-Nr.</th>
-                              <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Datum</th>
-                              <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Abrechnungszeitraum</th>
-                              <th className="text-right px-3 py-2 text-xs font-medium text-gray-500">Betrag (Brutto)</th>
-                              <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Status</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {subInvoices[sub.id].map((i: any) => (
-                              <tr key={i.id} className="border-t border-gray-100">
-                                <td className="px-3 py-2 font-medium text-gray-800">{i.invoiceNumber}</td>
-                                <td className="px-3 py-2 text-gray-500">{new Date(i.invoiceDate).toLocaleDateString("de")}</td>
-                                <td className="px-3 py-2 text-gray-500">
-                                  {i.billingPeriodStart && i.billingPeriodEnd
-                                    ? `${new Date(i.billingPeriodStart).toLocaleDateString("de")} – ${new Date(i.billingPeriodEnd).toLocaleDateString("de")}`
-                                    : "–"}
-                                </td>
-                                <td className="px-3 py-2 text-right font-medium text-gray-800">{Number(i.grossTotal).toFixed(2)} €</td>
-                                <td className="px-3 py-2">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${inv(i.status).cls}`}>{collectionStatusMap[i.paymentCollectionStatus] || inv(i.status).label}</span>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      )}
+                      <SubscriptionPaymentHistory
+                        subscriptionId={sub.id}
+                        amountPerPeriod={sub.monthlyPrice || 0}
+                        nextBillingDate={sub.nextBillingDate}
+                        status={sub.status}
+                      />
                     </td>
                   </tr>
                 )}

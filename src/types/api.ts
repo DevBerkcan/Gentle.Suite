@@ -176,6 +176,8 @@ export interface QuoteDetail {
   paymentTermKeys?: string[] | null;
   paymentTermOptions?: { id: Id; key: string; title: string; content: string; sortOrder: number }[] | null;
   chosenPaymentTermKey?: string | null;
+  installmentPeriodOptionsMonths?: number[] | null;
+  chosenInstallmentMonths?: number | null;
 }
 
 
@@ -373,6 +375,11 @@ export interface CustomerSubscription {
   mandateEmailLastError?: string | null;
   mandateEmailAttemptCount: number;
   billingAuthorizedAt?: string | null;
+  isInstallmentPlan: boolean;
+  totalInstallmentAmount?: number | null;
+  installmentsCompleted: number;
+  installmentSourceTitle?: string | null;
+  paidAmount: number;
 }
 
 export interface EligibleSubscriptionQuote {
