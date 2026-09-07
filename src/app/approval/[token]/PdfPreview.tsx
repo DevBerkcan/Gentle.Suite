@@ -4,11 +4,13 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import "react-pdf/dist/Page/TextLayer.css";
 
-// Bundle the worker via the installed pdfjs-dist package instead of a CDN <script> tag, and only ever
-// import/evaluate react-pdf in the browser (this file is loaded via next/dynamic with ssr:false from the
-// approval page) — pdfjs-dist relies on browser-only globals and crashes ("Object.defineProperty called
-// on non-object") if its module graph gets evaluated during Next.js's server-side render pass.
-pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.min.mjs", import.meta.url).toString();
+// Load the worker from a CDN rather than bundling it via `new URL(..., import.meta.url)`: the worker
+// file's own ESM syntax (import.meta, top-level import/export) makes Next.js's production Terser pass
+// fail to minify it as a webpack asset ("import.meta cannot be used outside of module code"), even
+// though it works fine in dev. This file is only ever loaded client-side (via next/dynamic with
+// ssr:false from the approval page, see page.tsx), so the CDN string itself is safe here — the crash
+// this used to cause was specifically from evaluating it during Next.js's server-side render pass.
+pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 interface Props {
   file: string;
