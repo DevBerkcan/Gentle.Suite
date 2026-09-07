@@ -10,6 +10,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
   Accepted: { label: "Angenommen", cls: "bg-green-50 text-success" },
   Ordered: { label: "Auftrag", cls: "bg-purple-50 text-purple-700" },
   Rejected: { label: "Abgelehnt", cls: "bg-red-50 text-danger" },
+  Inactive: { label: "Nicht aktiv", cls: "bg-gray-100 text-muted" },
   Expired: { label: "Abgelaufen", cls: "bg-yellow-50 text-warning" },
 };
 
@@ -21,7 +22,7 @@ const sigMap: Record<string, { label: string; cls: string }> = {
 
 function asQuoteStatus(value: any) {
   if (typeof value === "number") {
-    return ["Draft", "Sent", "Viewed", "Accepted", "Rejected", "Expired", "Ordered"][value] || String(value);
+    return ["Draft", "Sent", "Viewed", "Accepted", "Rejected", "Expired", "Ordered", "Inactive"][value] || String(value);
   }
   return value || "";
 }
@@ -90,8 +91,9 @@ export default function QuoteDetailPage() {
   const [editing, setEditing] = useState(false);
   const [editingHeader, setEditingHeader] = useState(false);
   const [headerForm, setHeaderForm] = useState({ subject: "", introText: "", outroText: "", notes: "", taxMode: "Standard", taxRate: 19, paymentTermKeys: [] as string[], installmentPeriodOptionsMonths: [] as number[] });
+  const [deactivating, setDeactivating] = useState(false);
   const [showSend, setShowSend] = useState(false);
-  const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 30 });
+  const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 14 });
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -233,6 +235,13 @@ export default function QuoteDetailPage() {
     } catch { setError("Fehler beim Speichern"); }
   }
 
+  async function handleDeactivate() {
+    setDeactivating(true); setError("");
+    try { setQuote(await api.deactivateQuote(id)); setSuccess("Angebot wurde auf nicht aktiv gesetzt."); }
+    catch (e: any) { setError(e?.message || "Angebot konnte nicht deaktiviert werden."); }
+    finally { setDeactivating(false); }
+  }
+
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     try {
@@ -329,7 +338,8 @@ export default function QuoteDetailPage() {
           <button onClick={handlePdfDownload} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">PDF</button>
           <button onClick={handleDuplicate} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Duplizieren</button>
           {isCurrentVersion && !editing && <button onClick={handleCreateNewVersion} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Neue Version</button>}
-          {(quoteStatus === "Draft" || quoteStatus === "Sent") && <button onClick={() => { setSendForm({ ...sendForm, recipientEmail: quote.primaryContactEmail || "" }); setShowSend(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>}
+          {isCurrentVersion && !editing && ["Draft", "Sent", "Viewed"].includes(quoteStatus) && <button disabled={deactivating} onClick={handleDeactivate} className="px-4 py-2 border border-border rounded-lg text-sm font-medium disabled:opacity-50">{deactivating ? "Wird deaktiviert..." : "Nicht aktiv"}</button>}
+          {(isCurrentVersion && ["Draft", "Sent", "Viewed"].includes(quoteStatus)) && <button onClick={() => { setSendForm({ ...sendForm, recipientEmail: quote.primaryContactEmail || "" }); setShowSend(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>}
           {quoteStatus === "Accepted" && <button onClick={handleMarkAsOrdered} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">Auftrag bestätigen</button>}
           {["Accepted", "Ordered"].includes(quoteStatus) && <button onClick={handleConvert} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">→ Zur Rechnung</button>}
           {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.b2bAuthorityConfirmed && Number(quote.subtotalMonthly || 0) > 0 && (
@@ -339,6 +349,7 @@ export default function QuoteDetailPage() {
         </div>
       </div>
 
+      {quote.expiresAt && <p className="text-sm text-muted mb-4">Gültig bis: {new Date(quote.expiresAt).toLocaleDateString("de-DE")}</p>}
       {/* Quote Info */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="bg-surface rounded-xl border border-border p-5">
@@ -657,7 +668,7 @@ export default function QuoteDetailPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Gueltigkeitsdauer (Tage)</label>
-                <input type="number" min="1" value={sendForm.expirationDays} onChange={e => setSendForm({ ...sendForm, expirationDays: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
+                <input type="number" min="1" max="365" required value={sendForm.expirationDays} onChange={e => setSendForm({ ...sendForm, expirationDays: Number(e.target.value) })} className="w-full px-3 py-2 border border-border rounded-lg" />
               </div>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={sendForm.requireSignature} onChange={e => setSendForm({ ...sendForm, requireSignature: e.target.checked })} className="rounded border-border" />

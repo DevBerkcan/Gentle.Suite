@@ -10,6 +10,7 @@ const statusMap: Record<string, { label: string; cls: string }> = {
   Accepted: { label: "Angenommen", cls: "bg-green-50 text-success" },
   Ordered: { label: "Auftrag", cls: "bg-purple-50 text-purple-700" },
   Rejected: { label: "Abgelehnt", cls: "bg-red-50 text-danger" },
+  Inactive: { label: "Nicht aktiv", cls: "bg-gray-100 text-muted" },
   Expired: { label: "Abgelaufen", cls: "bg-yellow-50 text-warning" },
 };
 
@@ -26,6 +27,7 @@ export default function QuotesPage() {
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
 
@@ -69,6 +71,13 @@ export default function QuotesPage() {
     } catch (e: any) { setError(e?.message || "Fehler beim Erstellen des Angebots"); }
   }
 
+  async function deactivate(id: string) {
+    setDeactivatingId(id); setError(""); setSuccess("");
+    try { await api.deactivateQuote(id); setSuccess("Angebot wurde auf nicht aktiv gesetzt."); loadQuotes(); }
+    catch (e: any) { setError(e?.message || "Angebot konnte nicht deaktiviert werden."); }
+    finally { setDeactivatingId(null); }
+  }
+
   const s = (status: string) => statusMap[status] || { label: status, cls: "bg-gray-100 text-muted" };
 
   return (
@@ -80,6 +89,9 @@ export default function QuotesPage() {
             <option value="">Alle Status</option>
             <option value="Draft">Entwurf</option>
             <option value="Sent">Gesendet</option>
+            <option value="Viewed">Angesehen</option>
+            <option value="Expired">Abgelaufen</option>
+            <option value="Inactive">Nicht aktiv</option>
             <option value="Accepted">Angenommen</option>
             <option value="Ordered">Auftrag</option>
             <option value="Rejected">Abgelehnt</option>
@@ -97,7 +109,7 @@ export default function QuotesPage() {
 
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <table className="w-full">
-          <thead><tr className="border-b border-border bg-background"><th className="px-4 py-3 text-left text-xs text-muted">Nr.</th><th className="px-4 py-3 text-left text-xs text-muted">Kunde</th><th className="px-4 py-3 text-left text-xs text-muted">Status</th><th className="px-4 py-3 text-left text-xs text-muted">Signatur</th><th className="px-4 py-3 text-right text-xs text-muted">Betrag</th><th className="px-4 py-3 text-left text-xs text-muted">Datum</th></tr></thead>
+          <thead><tr className="border-b border-border bg-background"><th className="px-4 py-3 text-left text-xs text-muted">Nr.</th><th className="px-4 py-3 text-left text-xs text-muted">Kunde</th><th className="px-4 py-3 text-left text-xs text-muted">Status</th><th className="px-4 py-3 text-left text-xs text-muted">Signatur</th><th className="px-4 py-3 text-right text-xs text-muted">Betrag</th><th className="px-4 py-3 text-left text-xs text-muted">Datum</th><th className="px-4 py-3 text-left text-xs text-muted">Gültig bis</th><th className="px-4 py-3 text-left text-xs text-muted">Aktion</th></tr></thead>
           <tbody>{data?.items?.map((q: any) => (
             <tr key={q.id} className="border-b border-border hover:bg-background cursor-pointer" onClick={() => window.location.href = `/quotes/${q.id}`}>
               <td className="px-4 py-3 font-medium">{q.quoteNumber}</td>
@@ -106,6 +118,8 @@ export default function QuotesPage() {
               <td className="px-4 py-3"><span className={`text-xs ${q.signatureStatus === "Signed" ? "text-success" : "text-muted"}`}>{sigMap[q.signatureStatus] || q.signatureStatus}</span></td>
               <td className="px-4 py-3 text-right font-medium">{q.grandTotal?.toFixed(2)} EUR</td>
               <td className="px-4 py-3 text-sm text-muted">{new Date(q.createdAt).toLocaleDateString("de")}</td>
+              <td className="px-4 py-3 text-sm text-muted">{q.expiresAt ? new Date(q.expiresAt).toLocaleDateString("de-DE") : "–"}</td>
+              <td className="px-4 py-3">{["Draft", "Sent", "Viewed"].includes(q.status) && <button disabled={deactivatingId !== null} onClick={e => { e.stopPropagation(); void deactivate(q.id); }} className="px-3 py-1.5 border border-border rounded-lg text-sm disabled:opacity-50">{deactivatingId === q.id ? "Wird deaktiviert..." : "Nicht aktiv"}</button>}</td>
             </tr>
           ))}</tbody>
         </table>

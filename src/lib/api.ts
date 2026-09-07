@@ -201,6 +201,7 @@ export const api = {
   createQuote: (data: any) => apiFetch<QuoteDetail>("/quotes", { method: "POST", body: JSON.stringify(data) }).then(normalizeQuote),
   updateQuoteLines: (id: string, data: any) => apiFetch<QuoteDetail>(`/quotes/${id}/lines`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeQuote),
   sendQuote: (id: string, data: any) => apiFetch<any>(`/quotes/${id}/send`, { method: "POST", body: JSON.stringify(data) }),
+  deactivateQuote: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/deactivate`, { method: "POST" }).then(normalizeQuote),
   markQuoteAsOrdered: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/order`, { method: "POST" }).then(normalizeQuote),
   convertQuoteToInvoice: (id: string) => apiFetch<InvoiceDetail>(`/quotes/${id}/convert-to-invoice`, { method: "POST" }).then(normalizeInvoice),
   updateQuote: (id: string, data: any) => apiFetch<QuoteDetail>(`/quotes/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeQuote),

@@ -4,7 +4,7 @@ export type CustomerStatus = typeof CUSTOMER_STATUS[number];
 export const NOTE_TYPE = ["General", "Credential", "Technical", "Financial", "Internal"] as const;
 export type NoteType = typeof NOTE_TYPE[number];
 
-export const QUOTE_STATUS = ["Draft", "Sent", "Viewed", "Accepted", "Rejected", "Expired"] as const;
+export const QUOTE_STATUS = ["Draft", "Sent", "Viewed", "Accepted", "Rejected", "Expired", "Ordered", "Inactive"] as const;
 export type QuoteStatus = typeof QUOTE_STATUS[number];
 
 export const SIGNATURE_STATUS = ["Pending", "Signed", "Declined", "Expired"] as const;
