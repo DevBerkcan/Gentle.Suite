@@ -18,7 +18,7 @@ const mainNav: NavItem[] = [
   { href: "/projects", label: "Projekte", icon: FolderKanban },
   { href: "/subscriptions", label: "Serienrechnungen", icon: RefreshCw },
   { href: "/installments", label: "Ratenzahlungen", icon: CalendarClock },
-  { href: "/time", label: "Zeiterfassung", icon: Clock },
+//  { href: "/time", label: "Zeiterfassung", icon: Clock },
   { href: "/calendar", label: "Kalender", icon: CalendarDays },
   { href: "/reports", label: "Berichte", icon: BarChart2 },
 ];
