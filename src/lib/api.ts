@@ -23,6 +23,7 @@ import type {
   ServiceCategory,
   TeamMember,
 } from "@/types/api";
+import type { DashboardOverview } from "@/types/dashboard";
 import {
   CUSTOMER_STATUS,
   EXPENSE_STATUS,
@@ -159,6 +160,7 @@ export const api = {
   login: (data: any) => apiFetch<any>("/auth/login", { method: "POST", body: JSON.stringify(data) }),
   // Dashboard
   kpis: () => apiFetch<any>("/dashboard/kpis"),
+  dashboardOverview: (signal?: AbortSignal) => apiFetch<DashboardOverview>("/dashboard/overview", { signal, cache: "no-store" }),
   finance: () => apiFetch<any>("/dashboard/finance"),
   // Customers
   customers: (params = "") => apiFetch<PagedResult<CustomerListItem>>(`/customers?${params}`).then((d) => normalizePaged(d, normalizeCustomer)),
