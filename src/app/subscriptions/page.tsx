@@ -434,35 +434,35 @@ export default function SubscriptionsPage() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <table className="w-full">
+      <div className="bg-surface rounded-xl border border-border overflow-x-auto">
+        <table className="w-full min-w-[1500px]">
           <thead>
             <tr className="border-b border-border bg-background">
-              <th className="px-4 py-3 text-left text-xs text-muted">Kunde</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Plan</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Rechnungsstellung</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Mandats-E-Mail</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Start</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Nächste Abrechnung</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Laufzeit</th>
-              <th className="px-4 py-3 text-right text-xs text-muted">Preis/Monat</th>
-              <th className="px-4 py-3 text-left text-xs text-muted">Aktionen</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Kunde</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Plan</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Status</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Rechnungsstellung</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Mandats-E-Mail</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Start</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Nächste Abrechnung</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Laufzeit</th>
+              <th className="px-4 py-3 text-right text-xs text-muted whitespace-nowrap">Preis/Monat</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Aktionen</th>
             </tr>
           </thead>
           <tbody>
             {filteredSubs.map((sub: any) => (
               <Fragment key={sub.id}>
                 <tr className="border-b border-border hover:bg-background">
-                  <td className="px-4 py-3 font-medium">{sub.customerName || "–"}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">{sub.customerName || "–"}</td>
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <div>{sub.planName}</div>
                     <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "Legacy: kein Vertragsnachweis"}</div>
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
                   </td>
-                  <td className="px-4 py-3 text-xs">
+                  <td className="px-4 py-3 text-xs whitespace-nowrap">
                     {sub.billingAuthorizedAt ? (
                       <div><span className="font-medium text-success">Autorisiert</span><div className="mt-1 text-muted">seit {new Date(sub.billingAuthorizedAt).toLocaleDateString("de")}</div></div>
                     ) : (
@@ -471,19 +471,19 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {sub.mandateEmailStatus === "Sent" ? (
-                      <div><span className="font-medium text-success">Gesendet</span><div className="mt-1 text-muted">{sub.mandateEmailRecipient}<br />{sub.mandateEmailSentAt ? new Date(sub.mandateEmailSentAt).toLocaleString("de-DE") : ""}</div></div>
+                      <div className="whitespace-nowrap"><span className="font-medium text-success">Gesendet</span><div className="mt-1 text-muted">{sub.mandateEmailRecipient}<br />{sub.mandateEmailSentAt ? new Date(sub.mandateEmailSentAt).toLocaleString("de-DE") : ""}</div></div>
                     ) : sub.mandateEmailStatus === "Failed" ? (
-                      <div><span className="font-medium text-danger">Fehlgeschlagen</span><div className="mt-1 max-w-48 text-muted" title={sub.mandateEmailLastError || ""}>{sub.mandateEmailLastError || "Erneut senden"}</div></div>
+                      <div><span className="font-medium text-danger">Fehlgeschlagen</span><div className="mt-1 max-w-64 text-muted" title={sub.mandateEmailLastError || ""}>{sub.mandateEmailLastError || "Erneut senden"}</div></div>
                     ) : (
-                      <span className="text-muted">Noch nicht versendet</span>
+                      <span className="text-muted whitespace-nowrap">Noch nicht versendet</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted">{new Date(sub.startDate).toLocaleDateString("de")}</td>
-                  <td className="px-4 py-3 text-sm text-muted">
+                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{new Date(sub.startDate).toLocaleDateString("de")}</td>
+                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
                     {sub.status === "PendingConfirmation" ? "–" : new Date(sub.nextBillingDate).toLocaleDateString("de")}
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted">{durationLabel(sub.contractDurationMonths)}</td>
-                  <td className="px-4 py-3 text-right font-medium">{sub.monthlyPrice?.toFixed(2)} EUR</td>
+                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{durationLabel(sub.contractDurationMonths)}</td>
+                  <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{sub.monthlyPrice?.toFixed(2)} EUR</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
                       {sub.status === "PendingConfirmation" && (

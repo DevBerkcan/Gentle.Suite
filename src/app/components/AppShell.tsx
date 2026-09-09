@@ -53,7 +53,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <button onClick={() => setSidebarOpen(false)} className="absolute top-3 right-3 p-1 rounded-lg hover:bg-background text-muted">
                   <X className="w-5 h-5" />
                 </button>
-                <Sidebar />
+                <Sidebar mobile />
               </div>
             </div>
           )}
