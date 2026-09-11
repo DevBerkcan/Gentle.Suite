@@ -43,6 +43,34 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
     }
   }
 
+  async function applyToPositions(optionKey: "hybrid" | "monthly12" | "monthly24") {
+    if (!confirm("Dies ersetzt alle aktuellen Angebotspositionen durch die Zahlungsaufteilung dieser Option. Fortfahren?")) return;
+
+    const lines: any[] = [];
+    if (optionKey === "hybrid") {
+      if (downPayment > 0) lines.push({ title: "Anzahlung", description: "", quantity: 1, unitPrice: downPayment, discountPercent: 0, lineType: "OneTime", vatPercent: 19, sortOrder: 0 });
+      if (hybrid.durationMonths > 0) lines.push({ title: `Monatsraten (${hybrid.durationMonths} × ${fmt(hybridMonthly)} €)`, description: "", quantity: hybrid.durationMonths, unitPrice: hybridMonthly, discountPercent: 0, lineType: "OneTime", vatPercent: 19, sortOrder: lines.length });
+    } else if (optionKey === "monthly12") {
+      const monthly = Math.round(monthly12.totalAmount / 12 * 100) / 100;
+      lines.push({ title: `Monatsraten (12 × ${fmt(monthly)} €)`, description: "", quantity: 12, unitPrice: monthly, discountPercent: 0, lineType: "OneTime", vatPercent: 19, sortOrder: 0 });
+    } else {
+      const monthly = Math.round(monthly24.totalAmount / 24 * 100) / 100;
+      lines.push({ title: `Monatsraten (24 × ${fmt(monthly)} €)`, description: "", quantity: 24, unitPrice: monthly, discountPercent: 0, lineType: "OneTime", vatPercent: 19, sortOrder: 0 });
+    }
+
+    setSaving(true);
+    setError("");
+    try {
+      await api.updateQuoteLines(quote.id, lines);
+      const updated = await api.updateQuote(quote.id, { paymentPlanConfig: { hybrid, monthly12, monthly24 } });
+      onSaved(updated);
+    } catch (e: any) {
+      setError(e?.message || "Positionen konnten nicht übernommen werden");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -101,6 +129,9 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
                 <div className="text-muted">Anzahlung {fmt(downPayment)} € + {fmt(hybridMonthly)} €/Monat über {hybrid.durationMonths} Monate</div>
                 <div className="text-muted">Gesamt: {fmt(hybrid.totalAmount)} €</div>
               </div>
+              <button onClick={() => applyToPositions("hybrid")} disabled={saving} className="mt-3 w-full px-3 py-1.5 border border-border rounded-lg text-xs font-medium hover:bg-background disabled:opacity-50">
+                In Angebotspositionen übernehmen
+              </button>
             </div>
 
             {/* Monatlich 12 */}
@@ -117,6 +148,9 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
                 <div className="text-muted">{fmt(monthly12.totalAmount / 12)} €/Monat über 12 Monate</div>
                 <div className="text-muted">Gesamt: {fmt(monthly12.totalAmount)} €</div>
               </div>
+              <button onClick={() => applyToPositions("monthly12")} disabled={saving} className="mt-3 w-full px-3 py-1.5 border border-border rounded-lg text-xs font-medium hover:bg-background disabled:opacity-50">
+                In Angebotspositionen übernehmen
+              </button>
             </div>
 
             {/* Monatlich 24 */}
@@ -133,6 +167,9 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
                 <div className="text-muted">{fmt(monthly24.totalAmount / 24)} €/Monat über 24 Monate</div>
                 <div className="text-muted">Gesamt: {fmt(monthly24.totalAmount)} €</div>
               </div>
+              <button onClick={() => applyToPositions("monthly24")} disabled={saving} className="mt-3 w-full px-3 py-1.5 border border-border rounded-lg text-xs font-medium hover:bg-background disabled:opacity-50">
+                In Angebotspositionen übernehmen
+              </button>
             </div>
           </div>
         </div>
