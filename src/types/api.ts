@@ -179,6 +179,14 @@ export interface QuoteDetail {
   chosenPaymentTermKey?: string | null;
   installmentPeriodOptionsMonths?: number[] | null;
   chosenInstallmentMonths?: number | null;
+  paymentPlanConfig?: {
+    hybrid: { downPaymentPercent: number; surchargePercent: number; durationMonths: number };
+    monthly12: { surchargePercent: number };
+    monthly24: { surchargePercent: number };
+  } | null;
+  paymentPlanOptions?: { key: string; title: string; subtitle: string; downPayment?: number | null; monthlyAmount?: number | null; totalAmount: number; months?: number | null }[] | null;
+  chosenPaymentPlanOptionKey?: string | null;
+  paymentPlanTransferredAt?: string | null;
 }
 
 
@@ -381,6 +389,10 @@ export interface CustomerSubscription {
   installmentsCompleted: number;
   installmentSourceTitle?: string | null;
   paidAmount: number;
+  installmentSurchargePercent?: number | null;
+  downPaymentPercent?: number | null;
+  downPaymentInvoiceId?: Id | null;
+  paymentPlanOptionKey?: string | null;
 }
 
 export interface EligibleSubscriptionQuote {

@@ -36,6 +36,7 @@ export default function ApprovalPage() {
   const [chosenPaymentTermKey, setChosenPaymentTermKey] = useState("");
   const [chosenInstallmentMonths, setChosenInstallmentMonths] = useState<number | null>(null);
   const [installmentChoiceMade, setInstallmentChoiceMade] = useState(false);
+  const [chosenPaymentPlanOptionKey, setChosenPaymentPlanOptionKey] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [pdfBlobUrl, setPdfBlobUrl] = useState<string | null>(null);
   const [pdfLoadError, setPdfLoadError] = useState(false);
@@ -221,6 +222,10 @@ export default function ApprovalPage() {
       alert("Bitte wählen Sie eine Zahlungsweise aus.");
       return;
     }
+    if ((quote?.paymentPlanOptions?.length ?? 0) > 0 && !chosenPaymentPlanOptionKey) {
+      alert("Bitte wählen Sie eine Zahlungsart aus.");
+      return;
+    }
     const sigData = getSignatureDataUrl();
     if (!sigData) {
       alert("Bitte unterschreiben Sie im Feld.");
@@ -236,6 +241,7 @@ export default function ApprovalPage() {
         b2bAuthorityConfirmed,
         chosenPaymentTermKey: chosenPaymentTermKey || undefined,
         chosenInstallmentMonths: chosenInstallmentMonths ?? undefined,
+        chosenPaymentPlanOptionKey: chosenPaymentPlanOptionKey || undefined,
         comment: "",
       });
       setDone(true);
@@ -537,6 +543,31 @@ export default function ApprovalPage() {
                     onChange={() => { setChosenInstallmentMonths(m); setInstallmentChoiceMade(true); }}
                   />
                   <span className="block font-medium text-white">{m} monatliche Raten à {(quote!.subtotalOneTime! / m).toFixed(2)} €</span>
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {(quote?.paymentPlanOptions?.length ?? 0) > 0 && (
+          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
+            <h2 className="text-lg font-semibold mb-1">Zahlungsart wählen *</h2>
+            <p className="text-slate-400 text-xs mb-4">Wählen Sie, wie Sie diesen Auftrag bezahlen möchten.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {quote!.paymentPlanOptions!.map((opt: any) => (
+                <label key={opt.key} className={`flex flex-col gap-2 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenPaymentPlanOptionKey === opt.key ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                  <div className="flex items-start gap-3">
+                    <input type="radio" name="paymentPlan" className="mt-1" checked={chosenPaymentPlanOptionKey === opt.key} onChange={() => setChosenPaymentPlanOptionKey(opt.key)} />
+                    <span>
+                      <span className="block font-medium text-white">{opt.title}</span>
+                      <span className="block text-slate-400 mt-0.5 text-xs">{opt.subtitle}</span>
+                    </span>
+                  </div>
+                  <div className="pl-7 text-xs text-slate-300">
+                    {opt.downPayment ? <div>Anzahlung: {Number(opt.downPayment).toFixed(2)} €</div> : null}
+                    {opt.monthlyAmount ? <div>{Number(opt.monthlyAmount).toFixed(2)} € / Monat{opt.months ? ` über ${opt.months} Monate` : ""}</div> : null}
+                    <div className="font-medium text-white">Gesamt: {Number(opt.totalAmount).toFixed(2)} €</div>
+                  </div>
                 </label>
               ))}
             </div>

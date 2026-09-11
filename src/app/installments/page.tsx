@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, Fragment } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 
@@ -171,6 +172,11 @@ export default function InstallmentsPage() {
                   <td className="px-4 py-3">
                     <div>{sub.installmentSourceTitle || sub.planName}</div>
                     <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "–"}</div>
+                    {sub.downPaymentInvoiceId && (
+                      <Link href={`/invoices/${sub.downPaymentInvoiceId}`} className="mt-1 block text-xs text-primary hover:underline">
+                        Anzahlungsrechnung {sub.downPaymentPercent != null ? `(${sub.downPaymentPercent}%)` : ""}
+                      </Link>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
@@ -199,6 +205,9 @@ export default function InstallmentsPage() {
                     <span className="font-medium">{sub.installmentsCompleted || 0}</span>
                     <span className="text-muted"> von {sub.contractDurationMonths ?? "–"}</span>
                     <div className="text-xs text-muted mt-0.5">{sub.monthlyPrice?.toFixed(2)} € / Rate</div>
+                    {sub.installmentSurchargePercent != null && (
+                      <div className="text-xs text-muted">+{Number(sub.installmentSurchargePercent).toFixed(1)}% Aufschlag</div>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm min-w-[120px]">
                     {(() => {

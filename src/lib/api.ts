@@ -213,6 +213,7 @@ export const api = {
   deactivateQuote: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/deactivate`, { method: "POST" }).then(normalizeQuote),
   markQuoteAsOrdered: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/order`, { method: "POST" }).then(normalizeQuote),
   convertQuoteToInvoice: (id: string) => apiFetch<InvoiceDetail>(`/quotes/${id}/convert-to-invoice`, { method: "POST" }).then(normalizeInvoice),
+  transferQuotePaymentPlan: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/transfer-payment-plan`, { method: "POST" }).then(normalizeQuote),
   updateQuote: (id: string, data: any) => apiFetch<QuoteDetail>(`/quotes/${id}`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeQuote),
   deleteQuote: (id: string) => apiFetch<any>(`/quotes/${id}`, { method: "DELETE" }),
   duplicateQuote: (id: string) => apiFetch<QuoteDetail>(`/quotes/${id}/duplicate`, { method: "POST" }).then(normalizeQuote),

@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import PreisangebotModal from "./PreisangebotModal";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Draft: { label: "Entwurf", cls: "bg-gray-100 text-muted" },
@@ -95,6 +96,8 @@ export default function QuoteDetailPage() {
   const [deactivating, setDeactivating] = useState(false);
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 14 });
+  const [showPreisangebot, setShowPreisangebot] = useState(false);
+  const [transferring, setTransferring] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -289,6 +292,23 @@ export default function QuoteDetailPage() {
     } catch (e: any) { setError(e?.message || "Fehler bei der Konvertierung"); }
   }
 
+  async function handleTransferPaymentPlan() {
+    const optionLabels: Record<string, string> = { onetime: "Einmalzahlung", hybrid: "Hybrid-Modell", monthly12: "Monatlich 12 Monate", monthly24: "Monatlich 24 Monate" };
+    const label = optionLabels[quote.chosenPaymentPlanOptionKey] || quote.chosenPaymentPlanOptionKey;
+    if (!confirm(`Zahlungsart "${label}" jetzt überführen? Dies erstellt die entsprechende Rechnung bzw. den Ratenzahlungsplan.`)) return;
+    setTransferring(true);
+    try {
+      const updated = await api.transferQuotePaymentPlan(id);
+      setQuote(updated);
+      setSuccess("Zahlungsart überführt.");
+      setTimeout(() => setSuccess(""), 4000);
+    } catch (e: any) {
+      setError(e?.message || "Überführung fehlgeschlagen");
+    } finally {
+      setTransferring(false);
+    }
+  }
+
   async function handleDuplicate() {
     try {
       const dup = await api.duplicateQuote(id);
@@ -355,6 +375,11 @@ export default function QuoteDetailPage() {
           {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.b2bAuthorityConfirmed && Number(quote.subtotalMonthly || 0) > 0 && (
             <button onClick={() => router.push(`/subscriptions?quoteId=${quote.id}`)} className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800">→ Zur Serienrechnung</button>
           )}
+          {isCurrentVersion && signatureStatus === "Signed" && quote.b2bAuthorityConfirmed && quote.chosenPaymentPlanOptionKey && !quote.paymentPlanTransferredAt && (
+            <button disabled={transferring} onClick={handleTransferPaymentPlan} className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800 disabled:opacity-50">
+              {transferring ? "Wird überführt..." : "→ Preisangebot überführen"}
+            </button>
+          )}
           {quoteStatus === "Draft" && <button onClick={handleDelete} className="px-4 py-2 text-danger border border-danger/30 rounded-lg text-sm font-medium hover:bg-red-50">Loeschen</button>}
         </div>
       </div>
@@ -410,9 +435,9 @@ export default function QuoteDetailPage() {
                   </p>
                 )}
               </div>
-              {(quote.subtotalOneTime || 0) > 0 && (
+              {(quote.subtotalOneTime || 0) > 0 && quote.installmentPeriodOptionsMonths?.length > 0 && (
                 <div>
-                  <label className="text-xs text-muted block mb-1">Ratenzahlung anbieten (einmalige Positionen)</label>
+                  <label className="text-xs text-muted block mb-1">Ratenzahlung anbieten (einmalige Positionen, Alt-Mechanismus)</label>
                   <div className="flex flex-wrap gap-2 border border-border rounded p-2">
                     {[6, 12, 24, 36].map(m => (
                       <label key={m} className="flex items-center gap-1.5 text-sm px-2 py-1 border border-border rounded">
@@ -422,6 +447,15 @@ export default function QuoteDetailPage() {
                     ))}
                   </div>
                   <p className="mt-1 text-xs text-muted">Der Kunde kann bei der Unterschrift w\u00e4hlen, ob er sofort zahlt oder in dieser Anzahl Monatsraten.</p>
+                </div>
+              )}
+              {(quote.subtotalOneTime || 0) > 0 && !(quote.installmentPeriodOptionsMonths?.length > 0) && (
+                <div>
+                  <label className="text-xs text-muted block mb-1">Preisangebot (Zahlungsoptionen)</label>
+                  <button type="button" onClick={() => setShowPreisangebot(true)} className="w-full px-3 py-2 border border-border rounded-lg text-sm text-left hover:bg-background">
+                    {quote.paymentPlanConfig ? "Preisangebot bearbeiten" : "Preisangebot konfigurieren"}
+                  </button>
+                  <p className="mt-1 text-xs text-muted">Legt fest, ob der Kunde einmalig, per Hybrid-Modell (Anzahlung + Raten) oder monatlich \u00fcber 12/24 Monate zahlen kann.</p>
                 </div>
               )}
               <div className="flex gap-2">
@@ -472,6 +506,24 @@ export default function QuoteDetailPage() {
                       </span>
                     ))}
                   </div>
+                </div>
+              )}
+              {quote.paymentPlanOptions?.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-muted">Preisangebot</span>
+                    {quoteStatus === "Draft" && <button onClick={() => setShowPreisangebot(true)} className="text-xs text-primary hover:underline">Bearbeiten</button>}
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {quote.paymentPlanOptions.map((opt: any) => (
+                      <span key={opt.key} className={`text-xs px-2 py-0.5 rounded-full ${opt.key === quote.chosenPaymentPlanOptionKey ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`} title={opt.subtitle}>
+                        {opt.title}{opt.key === quote.chosenPaymentPlanOptionKey ? " ✓" : ""}
+                      </span>
+                    ))}
+                  </div>
+                  {quote.paymentPlanTransferredAt && (
+                    <p className="mt-1 text-xs text-success">Überführt am {new Date(quote.paymentPlanTransferredAt).toLocaleDateString("de-DE")}</p>
+                  )}
                 </div>
               )}
             </div>
@@ -720,6 +772,14 @@ export default function QuoteDetailPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {showPreisangebot && (
+        <PreisangebotModal
+          quote={quote}
+          onClose={() => setShowPreisangebot(false)}
+          onSaved={(updated) => { setQuote(updated); setShowPreisangebot(false); setSuccess("Preisangebot gespeichert"); setTimeout(() => setSuccess(""), 3000); }}
+        />
       )}
     </div>
   );
