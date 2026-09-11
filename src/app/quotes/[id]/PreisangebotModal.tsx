@@ -2,32 +2,31 @@
 import { useState } from "react";
 import { api } from "@/lib/api";
 
-type HybridConfig = { downPaymentPercent: number; surchargePercent: number; durationMonths: number };
-type MonthlyConfig = { surchargePercent: number };
-
-const DEFAULT_HYBRID: HybridConfig = { downPaymentPercent: 37.5, surchargePercent: 15.0, durationMonths: 12 };
-const DEFAULT_MONTHLY12: MonthlyConfig = { surchargePercent: 25.0 };
-const DEFAULT_MONTHLY24: MonthlyConfig = { surchargePercent: 42.5 };
+type HybridConfig = { downPaymentPercent: number; totalAmount: number; durationMonths: number };
+type MonthlyConfig = { totalAmount: number };
 
 function fmt(n: number) {
-  return n.toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return (Number.isFinite(n) ? n : 0).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function surchargeInfo(totalAmount: number, projectPrice: number) {
+  if (projectPrice <= 0) return null;
+  const pct = (totalAmount / projectPrice - 1) * 100;
+  if (Math.abs(pct) < 0.05) return null;
+  return `${pct > 0 ? "+" : ""}${pct.toFixed(1)}% gegenüber Projektpreis`;
 }
 
 export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: any; onClose: () => void; onSaved: (updated: any) => void }) {
   const projectPrice: number = quote.subtotalOneTime || 0;
-  const [hybrid, setHybrid] = useState<HybridConfig>(quote.paymentPlanConfig?.hybrid || DEFAULT_HYBRID);
-  const [monthly12, setMonthly12] = useState<MonthlyConfig>(quote.paymentPlanConfig?.monthly12 || DEFAULT_MONTHLY12);
-  const [monthly24, setMonthly24] = useState<MonthlyConfig>(quote.paymentPlanConfig?.monthly24 || DEFAULT_MONTHLY24);
+  const [hybrid, setHybrid] = useState<HybridConfig>(quote.paymentPlanConfig?.hybrid || { downPaymentPercent: 37.5, totalAmount: projectPrice, durationMonths: 12 });
+  const [monthly12, setMonthly12] = useState<MonthlyConfig>(quote.paymentPlanConfig?.monthly12 || { totalAmount: projectPrice });
+  const [monthly24, setMonthly24] = useState<MonthlyConfig>(quote.paymentPlanConfig?.monthly24 || { totalAmount: projectPrice });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  const downPayment = Math.round(projectPrice * hybrid.downPaymentPercent / 100 * 100) / 100;
-  const hybridFinanced = Math.round((projectPrice - downPayment) * (1 + hybrid.surchargePercent / 100) * 100) / 100;
-  const hybridTotal = downPayment + hybridFinanced;
+  const downPayment = Math.round(hybrid.totalAmount * hybrid.downPaymentPercent / 100 * 100) / 100;
+  const hybridFinanced = hybrid.totalAmount - downPayment;
   const hybridMonthly = hybrid.durationMonths > 0 ? hybridFinanced / hybrid.durationMonths : 0;
-
-  const m12Total = Math.round(projectPrice * (1 + monthly12.surchargePercent / 100) * 100) / 100;
-  const m24Total = Math.round(projectPrice * (1 + monthly24.surchargePercent / 100) * 100) / 100;
 
   async function save() {
     setSaving(true);
@@ -56,7 +55,7 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
         </div>
 
         <div className="p-6 space-y-6">
-          <p className="text-sm text-muted">Lege für die vier Zahlungsoptionen die Konditionen fest. Der Projektpreis wird automatisch aus den einmaligen Angebotspositionen berechnet.</p>
+          <p className="text-sm text-muted">Lege für die vier Zahlungsoptionen die Konditionen fest. Der Projektpreis wird automatisch aus den einmaligen Angebotspositionen berechnet — die Gesamtsumme je Zahlungsoption kannst du frei davon abweichend festlegen.</p>
 
           <div>
             <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Projektpreis (€)</label>
@@ -80,12 +79,13 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
 
               <div className="space-y-3">
                 <div>
-                  <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Anzahlung</span><span className="font-medium text-text">{hybrid.downPaymentPercent.toFixed(1)}%</span></div>
-                  <input type="range" min={0} max={90} step={0.5} value={hybrid.downPaymentPercent} onChange={e => setHybrid({ ...hybrid, downPaymentPercent: +e.target.value })} className="w-full accent-primary" />
+                  <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Gesamtsumme (€)</label>
+                  <input type="number" step="0.01" min={0} value={hybrid.totalAmount} onChange={e => setHybrid({ ...hybrid, totalAmount: +e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                  {surchargeInfo(hybrid.totalAmount, projectPrice) && <p className="mt-1 text-xs text-muted">≈ {surchargeInfo(hybrid.totalAmount, projectPrice)}</p>}
                 </div>
                 <div>
-                  <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Aufschlag auf Restbetrag</span><span className="font-medium text-text">{hybrid.surchargePercent.toFixed(1)}%</span></div>
-                  <input type="range" min={0} max={100} step={0.5} value={hybrid.surchargePercent} onChange={e => setHybrid({ ...hybrid, surchargePercent: +e.target.value })} className="w-full accent-primary" />
+                  <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Anzahlung</span><span className="font-medium text-text">{hybrid.downPaymentPercent.toFixed(1)}%</span></div>
+                  <input type="range" min={0} max={90} step={0.5} value={hybrid.downPaymentPercent} onChange={e => setHybrid({ ...hybrid, downPaymentPercent: +e.target.value })} className="w-full accent-primary" />
                 </div>
                 <div>
                   <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Laufzeit</span><span className="font-medium text-text">{hybrid.durationMonths} Monate</span></div>
@@ -96,37 +96,39 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
               <div className="mt-4 pt-3 border-t border-border text-sm">
                 <div className="font-medium">Hybrid-Modell</div>
                 <div className="text-muted">Anzahlung {fmt(downPayment)} € + {fmt(hybridMonthly)} €/Monat über {hybrid.durationMonths} Monate</div>
-                <div className="text-muted">Gesamt: {fmt(hybridTotal)} €</div>
+                <div className="text-muted">Gesamt: {fmt(hybrid.totalAmount)} €</div>
               </div>
             </div>
 
             {/* Monatlich 12 */}
             <div className="border border-border rounded-xl p-4">
               <h3 className="font-semibold">Monatlich 12 Monate</h3>
-              <p className="text-xs text-muted mt-1 mb-4">0 € Anzahlung · voller Preis + Aufschlag über 12 Monate</p>
+              <p className="text-xs text-muted mt-1 mb-4">0 € Anzahlung · Gesamtsumme in 12 Monatsraten</p>
               <div>
-                <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Aufschlag</span><span className="font-medium text-text">{monthly12.surchargePercent.toFixed(1)}%</span></div>
-                <input type="range" min={0} max={100} step={0.5} value={monthly12.surchargePercent} onChange={e => setMonthly12({ surchargePercent: +e.target.value })} className="w-full accent-primary" />
+                <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Gesamtsumme (€)</label>
+                <input type="number" step="0.01" min={0} value={monthly12.totalAmount} onChange={e => setMonthly12({ totalAmount: +e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                {surchargeInfo(monthly12.totalAmount, projectPrice) && <p className="mt-1 text-xs text-muted">≈ {surchargeInfo(monthly12.totalAmount, projectPrice)}</p>}
               </div>
               <div className="mt-4 pt-3 border-t border-border text-sm">
                 <div className="font-medium">Monatlich 12 Monate</div>
-                <div className="text-muted">{fmt(m12Total / 12)} €/Monat über 12 Monate</div>
-                <div className="text-muted">Gesamt: {fmt(m12Total)} €</div>
+                <div className="text-muted">{fmt(monthly12.totalAmount / 12)} €/Monat über 12 Monate</div>
+                <div className="text-muted">Gesamt: {fmt(monthly12.totalAmount)} €</div>
               </div>
             </div>
 
             {/* Monatlich 24 */}
             <div className="border border-border rounded-xl p-4">
               <h3 className="font-semibold">Monatlich 24 Monate</h3>
-              <p className="text-xs text-muted mt-1 mb-4">0 € Anzahlung · voller Preis + Aufschlag über 24 Monate</p>
+              <p className="text-xs text-muted mt-1 mb-4">0 € Anzahlung · Gesamtsumme in 24 Monatsraten</p>
               <div>
-                <div className="flex justify-between text-xs text-muted mb-1"><span className="uppercase tracking-wide">Aufschlag</span><span className="font-medium text-text">{monthly24.surchargePercent.toFixed(1)}%</span></div>
-                <input type="range" min={0} max={150} step={0.5} value={monthly24.surchargePercent} onChange={e => setMonthly24({ surchargePercent: +e.target.value })} className="w-full accent-primary" />
+                <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Gesamtsumme (€)</label>
+                <input type="number" step="0.01" min={0} value={monthly24.totalAmount} onChange={e => setMonthly24({ totalAmount: +e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+                {surchargeInfo(monthly24.totalAmount, projectPrice) && <p className="mt-1 text-xs text-muted">≈ {surchargeInfo(monthly24.totalAmount, projectPrice)}</p>}
               </div>
               <div className="mt-4 pt-3 border-t border-border text-sm">
                 <div className="font-medium">Monatlich 24 Monate</div>
-                <div className="text-muted">{fmt(m24Total / 24)} €/Monat über 24 Monate</div>
-                <div className="text-muted">Gesamt: {fmt(m24Total)} €</div>
+                <div className="text-muted">{fmt(monthly24.totalAmount / 24)} €/Monat über 24 Monate</div>
+                <div className="text-muted">Gesamt: {fmt(monthly24.totalAmount)} €</div>
               </div>
             </div>
           </div>

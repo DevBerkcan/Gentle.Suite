@@ -180,9 +180,9 @@ export interface QuoteDetail {
   installmentPeriodOptionsMonths?: number[] | null;
   chosenInstallmentMonths?: number | null;
   paymentPlanConfig?: {
-    hybrid: { downPaymentPercent: number; surchargePercent: number; durationMonths: number };
-    monthly12: { surchargePercent: number };
-    monthly24: { surchargePercent: number };
+    hybrid: { downPaymentPercent: number; totalAmount: number; durationMonths: number };
+    monthly12: { totalAmount: number };
+    monthly24: { totalAmount: number };
   } | null;
   paymentPlanOptions?: { key: string; title: string; subtitle: string; downPayment?: number | null; monthlyAmount?: number | null; totalAmount: number; months?: number | null }[] | null;
   chosenPaymentPlanOptionKey?: string | null;
