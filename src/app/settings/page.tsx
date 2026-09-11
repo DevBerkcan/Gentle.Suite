@@ -265,14 +265,6 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium mb-1">Rechnungs-Schlusstext</label>
               <textarea rows={2} value={form.invoiceOutroTemplate || ""} onChange={e => f("invoiceOutroTemplate", e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
             </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Angebots-Einleitung</label>
-              <textarea rows={2} value={form.quoteIntroTemplate || ""} onChange={e => f("quoteIntroTemplate", e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium mb-1">Angebots-Schlusstext</label>
-              <textarea rows={2} value={form.quoteOutroTemplate || ""} onChange={e => f("quoteOutroTemplate", e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
-            </div>
           </div>
         </section>
 
