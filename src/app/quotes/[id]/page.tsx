@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import PreisangebotModal from "./PreisangebotModal";
 
@@ -83,6 +83,7 @@ function PriceInput({ value, onChange, className }: { value: number; onChange: (
 export default function QuoteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [quote, setQuote] = useState<any>(null);
   const [lines, setLines] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
@@ -109,6 +110,11 @@ export default function QuoteDetailPage() {
     api.paymentTerms().then(setPaymentTermCatalog).catch(() => {});
     api.legalTexts().then(setLegalTextCatalog).catch(() => {});
   }, [id]);
+
+  useEffect(() => {
+    if (searchParams.get("preisangebot") === "1") setShowPreisangebot(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function loadQuote() {
     api.quote(id).then(q => {

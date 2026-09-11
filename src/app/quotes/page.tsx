@@ -23,7 +23,7 @@ export default function QuotesPage() {
   const [showNew, setShowNew] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
-  const [newQuote, setNewQuote, clearNewQuote] = useLocalStorage("draft:quote-create", { customerId: "", templateId: "" });
+  const [newQuote, setNewQuote, clearNewQuote] = useLocalStorage("draft:quote-create", { customerId: "", templateId: "", offerInstallments: false });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -56,11 +56,16 @@ export default function QuotesPage() {
     if (Object.keys(nextErrors).length > 0) return;
 
     try {
-      if (newQuote.templateId) {
-        await api.createQuote({ customerId: newQuote.customerId, templateId: newQuote.templateId });
-      } else {
-        await api.createQuote({ customerId: newQuote.customerId });
+      const created = newQuote.templateId
+        ? await api.createQuote({ customerId: newQuote.customerId, templateId: newQuote.templateId })
+        : await api.createQuote({ customerId: newQuote.customerId });
+
+      if (newQuote.offerInstallments) {
+        clearNewQuote();
+        window.location.href = `/quotes/${created.id}?preisangebot=1`;
+        return;
       }
+
       setShowNew(false);
       clearNewQuote();
       setFieldErrors({});
@@ -142,6 +147,14 @@ export default function QuotesPage() {
                 <select value={newQuote.templateId} onChange={e => setNewQuote({...newQuote, templateId: e.target.value})} className="w-full px-3 py-2 border border-border rounded-lg">
                   <option value="">Keine Vorlage (leer)</option>{templates.map((t: any) => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Zahlungsart</label>
+                <div className="flex gap-1 bg-background border border-border rounded-lg p-1">
+                  <button type="button" onClick={() => setNewQuote({...newQuote, offerInstallments: false})} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${!newQuote.offerInstallments ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}>Nur Einmalzahlung</button>
+                  <button type="button" onClick={() => setNewQuote({...newQuote, offerInstallments: true})} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${newQuote.offerInstallments ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}>Ratenzahlung anbieten</button>
+                </div>
+                {newQuote.offerInstallments && <p className="mt-1 text-xs text-muted">Nach dem Anlegen öffnet sich direkt das Preisangebot-Modal zum Einstellen der Zahlungsoptionen.</p>}
               </div>
               <div className="flex gap-2"><button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Erstellen</button><button type="button" onClick={() => { setShowNew(false); setFieldErrors({}); }} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button></div>
             </form>
