@@ -520,12 +520,25 @@ export default function QuoteDetailPage() {
                     <span className="text-muted">Preisangebot</span>
                     {quoteStatus === "Draft" && <button onClick={() => setShowPreisangebot(true)} className="text-xs text-primary hover:underline">Bearbeiten</button>}
                   </div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {quote.paymentPlanOptions.map((opt: any) => (
-                      <span key={opt.key} className={`text-xs px-2 py-0.5 rounded-full ${opt.key === quote.chosenPaymentPlanOptionKey ? "bg-green-50 text-success font-medium" : "bg-gray-100 text-muted"}`} title={opt.subtitle}>
-                        {opt.title}{opt.key === quote.chosenPaymentPlanOptionKey ? " ✓" : ""}
-                      </span>
-                    ))}
+                  <div className="space-y-1.5">
+                    {quote.paymentPlanOptions.map((opt: any) => {
+                      const chosen = opt.key === quote.chosenPaymentPlanOptionKey;
+                      return (
+                        <div key={opt.key} className={`rounded-lg border px-2.5 py-1.5 text-xs ${chosen ? "border-success bg-green-50" : "border-border"}`}>
+                          <div className="flex items-center justify-between gap-2">
+                            <span className={chosen ? "font-medium text-success" : "font-medium"}>{opt.title}{chosen ? " ✓" : ""}</span>
+                            <span className="font-semibold shrink-0">{Number(opt.totalAmount ?? 0).toFixed(2)} €</span>
+                          </div>
+                          {(opt.downPayment || opt.monthlyAmount) && (
+                            <div className="text-muted mt-0.5">
+                              {opt.downPayment ? `${Number(opt.downPayment).toFixed(2)} € Anzahlung + ` : ""}
+                              {opt.monthlyAmount ? `${Number(opt.monthlyAmount).toFixed(2)} €/Monat` : ""}
+                              {opt.months ? ` × ${opt.months}` : ""}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                   {quote.paymentPlanTransferredAt && (
                     <p className="mt-1 text-xs text-success">Überführt am {new Date(quote.paymentPlanTransferredAt).toLocaleDateString("de-DE")}</p>

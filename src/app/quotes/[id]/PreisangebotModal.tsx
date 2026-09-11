@@ -60,6 +60,9 @@ export default function PreisangebotModal({ quote, onClose, onSaved }: { quote: 
           <div>
             <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Projektpreis (€)</label>
             <div className="px-3 py-2 border border-border rounded-lg text-lg font-semibold bg-background">{fmt(projectPrice)} €</div>
+            {projectPrice === 0 && (
+              <p className="mt-1 text-xs text-warning">Für dieses Angebot sind noch keine Positionen erfasst — der Projektpreis beträgt daher 0 €. Die hier eingegebenen Beträge bleiben trotzdem gespeichert; sobald du Positionen hinzufügst, erscheint der Projektpreis automatisch.</p>
+            )}
           </div>
 
           {error && <div className="bg-red-50 text-danger px-3 py-2 rounded-lg text-sm">{error}</div>}
