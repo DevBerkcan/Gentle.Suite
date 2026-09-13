@@ -32,6 +32,9 @@ export default function InvoicesPage() {
     subject: "",
     paymentTermDays: 14,
     taxMode: "Standard",
+    introText: "",
+    outroText: "",
+    notes: "",
   };
 
   const [data, setData] = useState<any>(null);
@@ -140,6 +143,8 @@ export default function InvoicesPage() {
         ...emptyForm,
         paymentTermDays: settings?.invoicePaymentTermDays || 14,
         taxMode: settings?.defaultTaxMode || "Standard",
+        introText: settings?.invoiceIntroTemplate || "",
+        outroText: settings?.invoiceOutroTemplate || "",
       });
     } catch {}
     setQuotesLoading(false);
@@ -239,6 +244,9 @@ const save = async () => {
       subject: form.subject || undefined,
       paymentTermDays: form.paymentTermDays,
       taxMode: form.taxMode,
+      introText: form.introText || undefined,
+      outroText: form.outroText || undefined,
+      notes: form.notes || undefined,
       lines: validLines.map((l: any, i: number) => ({
         serviceCatalogItemId: l.serviceCatalogItemId || undefined,
         title: l.title,
@@ -774,6 +782,33 @@ const save = async () => {
                       <option value="SmallBusiness">Kleinunternehmer</option>
                       <option value="ReverseCharge">Reverse Charge</option>
                     </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted block mb-1">Einleitungstext</label>
+                    <textarea
+                      rows={2}
+                      value={form.introText}
+                      onChange={(e) => setForm((f: any) => ({ ...f, introText: e.target.value }))}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted block mb-1">Schlusstext</label>
+                    <textarea
+                      rows={2}
+                      value={form.outroText}
+                      onChange={(e) => setForm((f: any) => ({ ...f, outroText: e.target.value }))}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-xs text-muted block mb-1">Notizen (intern, erscheint nicht auf dem PDF)</label>
+                    <textarea
+                      rows={2}
+                      value={form.notes}
+                      onChange={(e) => setForm((f: any) => ({ ...f, notes: e.target.value }))}
+                      className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background"
+                    />
                   </div>
                 </div>
 
