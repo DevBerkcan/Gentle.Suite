@@ -393,6 +393,23 @@ export interface CustomerSubscription {
   downPaymentPercent?: number | null;
   downPaymentInvoiceId?: Id | null;
   paymentPlanOptionKey?: string | null;
+  billingStage?: string;
+}
+
+export interface BillingCalendarOccurrence {
+  subscriptionId: Id;
+  customerName: string;
+  title: string;
+  isInstallmentPlan: boolean;
+  date: string;
+  amount: number;
+  isLastInstallment: boolean;
+}
+
+export interface BillingCalendar {
+  occurrences: BillingCalendarOccurrence[];
+  totalNext30Days: number;
+  totalNext90Days: number;
 }
 
 export interface EligibleSubscriptionQuote {

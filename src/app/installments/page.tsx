@@ -4,6 +4,7 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 import ManualInstallmentModal from "./ManualInstallmentModal";
+import BillingCalendarModal from "@/app/components/BillingCalendarModal";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -30,6 +31,7 @@ export default function InstallmentsPage() {
   const [sendingMandateId, setSendingMandateId] = useState<string | null>(null);
   const [authorizingId, setAuthorizingId] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
+  const [showBillingCalendar, setShowBillingCalendar] = useState(false);
 
   function loadSubs() {
     api.allSubs().then(setSubs).catch(() => setError("Ratenzahlungen konnten nicht geladen werden"));
@@ -41,7 +43,7 @@ export default function InstallmentsPage() {
   const activePlans = plans.filter(s => s.status === "Active");
   const outstandingTotal = activePlans.reduce((sum, s) => {
     const total = Number(s.totalInstallmentAmount || 0);
-    const paid = (s.installmentsCompleted || 0) * Number(s.monthlyPrice || 0);
+    const paid = Number(s.paidAmount || 0);
     return sum + Math.max(0, total - paid);
   }, 0);
   const completedThisMonth = plans.filter(s => {
@@ -50,6 +52,11 @@ export default function InstallmentsPage() {
     const d = s.nextBillingDate ? new Date(s.nextBillingDate) : null;
     return d && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).length;
+  const mandateIssuesCount = plans.filter(s => s.billingStage === "mandate").length;
+  const totalIncome = plans.reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
+  const nextChargeSub = activePlans
+    .filter(s => s.nextBillingDate)
+    .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime())[0];
 
   const filteredPlans = statusFilter === "Alle" ? plans : plans.filter(s => s.status === statusFilter);
 
@@ -127,7 +134,7 @@ export default function InstallmentsPage() {
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 
       {/* KPI Bar */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-8">
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted mb-1">Aktive Ratenzahlungen</p>
           <p className="text-2xl font-bold">{activePlans.length}</p>
@@ -139,11 +146,33 @@ export default function InstallmentsPage() {
           <p className="text-xs text-muted mt-0.5">noch ausstehend über alle aktiven Pläne</p>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
+          <p className="text-xs text-muted mb-1">Gesamteinnahmen</p>
+          <p className="text-2xl font-bold">{totalIncome.toFixed(2)} €</p>
+          <p className="text-xs text-muted mt-0.5">bereits bezahlt</p>
+        </div>
+        <div className={`bg-surface border rounded-xl p-4 ${mandateIssuesCount > 0 ? "border-red-200" : "border-border"}`}>
+          <p className="text-xs text-muted mb-1">Mandat fehlt/ungültig</p>
+          <p className={`text-2xl font-bold ${mandateIssuesCount > 0 ? "text-danger" : ""}`}>{mandateIssuesCount}</p>
+          <p className="text-xs text-muted mt-0.5">benötigt Aufmerksamkeit</p>
+        </div>
+        <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted mb-1">Abgeschlossen diesen Monat</p>
           <p className="text-2xl font-bold">{completedThisMonth}</p>
           <p className="text-xs text-muted mt-0.5">vollständig abbezahlt</p>
         </div>
+        <button
+          onClick={() => setShowBillingCalendar(true)}
+          className="bg-surface border border-border rounded-xl p-4 text-left cursor-pointer hover:border-primary hover:shadow-sm transition-all"
+        >
+          <p className="text-xs text-muted mb-1">Nächste Abbuchung</p>
+          <p className="text-2xl font-bold">
+            {nextChargeSub ? new Date(nextChargeSub.nextBillingDate).toLocaleDateString("de") : "–"}
+          </p>
+          <p className="text-xs text-primary mt-0.5">Kalender ansehen →</p>
+        </button>
       </div>
+
+      {showBillingCalendar && <BillingCalendarModal onClose={() => setShowBillingCalendar(false)} defaultScope="installments" />}
 
       <div className="flex justify-between items-center mb-3">
         <h2 className="font-semibold">Ratenzahlungspläne</h2>

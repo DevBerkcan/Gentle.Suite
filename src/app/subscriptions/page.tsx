@@ -2,6 +2,7 @@
 import { useEffect, useState, Fragment } from "react";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
+import BillingCalendarModal from "@/app/components/BillingCalendarModal";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -9,6 +10,16 @@ const statusMap: Record<string, { label: string; cls: string }> = {
   Cancelled: { label: "Gekündigt", cls: "bg-gray-100 text-gray-700" },
   Expired: { label: "Abgelaufen", cls: "bg-gray-100 text-gray-500" },
   PendingConfirmation: { label: "Bestätigung ausstehend", cls: "bg-orange-50 text-orange-700" },
+};
+
+const billingStageMap: Record<string, { label: string; cls: string }> = {
+  ready: { label: "Bereit", cls: "bg-green-50 text-success" },
+  mandate: { label: "Mandat fehlt", cls: "bg-red-50 text-danger" },
+  authorization: { label: "Warten auf Freigabe", cls: "bg-orange-50 text-orange-700" },
+  review: { label: "Prüfung nötig", cls: "bg-orange-50 text-orange-700" },
+  paused: { label: "Pausiert", cls: "bg-yellow-50 text-warning" },
+  completed: { label: "Abgeschlossen", cls: "bg-blue-50 text-blue-700" },
+  closed: { label: "Beendet", cls: "bg-gray-100 text-gray-500" },
 };
 
 const invoiceStatusMap: Record<string, { label: string; cls: string }> = {
@@ -79,6 +90,7 @@ export default function SubscriptionsPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [statusFilter, setStatusFilter] = useState("Alle");
+  const [showBillingCalendar, setShowBillingCalendar] = useState(false);
   const [triggerLoading, setTriggerLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [sendingMandateId, setSendingMandateId] = useState<string | null>(null);
@@ -168,6 +180,8 @@ export default function SubscriptionsPage() {
   const nextBillingSub = activeSubs
     .filter(s => s.nextBillingDate)
     .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime())[0];
+  const mandateIssuesCount = nonInstallmentSubs.filter(s => s.billingStage === "mandate").length;
+  const totalIncome = nonInstallmentSubs.reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
 
   const filteredSubs = statusFilter === "Alle" ? nonInstallmentSubs : nonInstallmentSubs.filter(s => s.status === statusFilter);
 
@@ -348,7 +362,7 @@ export default function SubscriptionsPage() {
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 
       {/* KPI Bar */}
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
         <div className="bg-surface border border-border rounded-xl p-4">
           <p className="text-xs text-muted mb-1">Aktive Abonnements</p>
           <p className="text-2xl font-bold">{activeSubs.length}</p>
@@ -360,13 +374,28 @@ export default function SubscriptionsPage() {
           <p className="text-xs text-muted mt-0.5">monatlich wiederkehrend</p>
         </div>
         <div className="bg-surface border border-border rounded-xl p-4">
+          <p className="text-xs text-muted mb-1">Gesamteinnahmen</p>
+          <p className="text-2xl font-bold">{totalIncome.toFixed(2)} €</p>
+          <p className="text-xs text-muted mt-0.5">bereits bezahlt</p>
+        </div>
+        <div className={`bg-surface border rounded-xl p-4 ${mandateIssuesCount > 0 ? "border-red-200" : "border-border"}`}>
+          <p className="text-xs text-muted mb-1">Mandat fehlt/ungültig</p>
+          <p className={`text-2xl font-bold ${mandateIssuesCount > 0 ? "text-danger" : ""}`}>{mandateIssuesCount}</p>
+          <p className="text-xs text-muted mt-0.5">benötigt Aufmerksamkeit</p>
+        </div>
+        <button
+          onClick={() => setShowBillingCalendar(true)}
+          className="bg-surface border border-border rounded-xl p-4 text-left cursor-pointer hover:border-primary hover:shadow-sm transition-all"
+        >
           <p className="text-xs text-muted mb-1">Nächste Abrechnung</p>
           <p className="text-2xl font-bold">
             {nextBillingSub ? new Date(nextBillingSub.nextBillingDate).toLocaleDateString("de") : "–"}
           </p>
-          <p className="text-xs text-muted mt-0.5">{nextBillingSub?.customerName ?? ""}</p>
-        </div>
+          <p className="text-xs text-primary mt-0.5">Kalender ansehen →</p>
+        </button>
       </div>
+
+      {showBillingCalendar && <BillingCalendarModal onClose={() => setShowBillingCalendar(false)} defaultScope="recurring" />}
 
       {/* Plans Management */}
       <div className="mb-8">
@@ -441,6 +470,7 @@ export default function SubscriptionsPage() {
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Kunde</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Plan</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Status</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Mandat</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Rechnungsstellung</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Mandats-E-Mail</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Start</th>
@@ -461,6 +491,11 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
+                  </td>
+                  <td className="px-4 py-3 whitespace-nowrap">
+                    <span className={`text-xs px-2 py-1 rounded-full ${(billingStageMap[sub.billingStage] || billingStageMap.review).cls}`}>
+                      {(billingStageMap[sub.billingStage] || billingStageMap.review).label}
+                    </span>
                   </td>
                   <td className="px-4 py-3 text-xs whitespace-nowrap">
                     {sub.billingAuthorizedAt ? (
@@ -508,7 +543,7 @@ export default function SubscriptionsPage() {
                 </tr>
                 {expandedSubId === sub.id && (
                   <tr>
-                    <td colSpan={10} className="bg-gray-50 px-6 py-4">
+                    <td colSpan={11} className="bg-gray-50 px-6 py-4">
                       <SubscriptionPaymentHistory
                         subscriptionId={sub.id}
                         amountPerPeriod={sub.monthlyPrice || 0}
