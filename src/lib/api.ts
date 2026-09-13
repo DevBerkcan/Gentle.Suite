@@ -600,8 +600,18 @@ deleteServiceItem: (id: string) =>
   agencyContractByQuote: (quoteId: string) => apiFetch<any>(`/agencycontracts/by-quote/${quoteId}`),
   agencyContractBySubscription: (subscriptionId: string) => apiFetch<any>(`/agencycontracts/by-subscription/${subscriptionId}`),
   createAgencyContract: (data: any) => apiFetch<any>("/agencycontracts", { method: "POST", body: JSON.stringify(data) }),
+  contractPartyPreview: (params: { quoteId?: string; subscriptionId?: string }) => {
+    const qs = params.quoteId ? `quoteId=${params.quoteId}` : `subscriptionId=${params.subscriptionId}`;
+    return apiFetch<any>(`/agencycontracts/party-preview?${qs}`);
+  },
+  generateAgencyContract: (data: any) => apiFetch<any>("/agencycontracts/from-wizard", { method: "POST", body: JSON.stringify(data) }),
   updateAgencyContractSections: (id: string, sections: any[]) => apiFetch<any>(`/agencycontracts/${id}/sections`, { method: "PUT", body: JSON.stringify({ sections }) }),
   signAndSendAgencyContract: (id: string) => apiFetch<any>(`/agencycontracts/${id}/sign-and-send`, { method: "POST" }),
+  // Contract Clause Blocks (Leistungsbausteine)
+  contractClauseBlocks: () => apiFetch<any[]>("/contractclauseblocks"),
+  createContractClauseBlock: (data: any) => apiFetch<any>("/contractclauseblocks", { method: "POST", body: JSON.stringify(data) }),
+  updateContractClauseBlock: (id: string, data: any) => apiFetch<any>(`/contractclauseblocks/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteContractClauseBlock: (id: string) => apiFetch<any>(`/contractclauseblocks/${id}`, { method: "DELETE" }),
   agencyContractPdf: (id: string) => `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/agencycontracts/${id}/pdf`,
   agencyContractPdfBlob: async (id: string) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;

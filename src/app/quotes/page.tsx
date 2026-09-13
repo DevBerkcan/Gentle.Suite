@@ -23,7 +23,7 @@ export default function QuotesPage() {
   const [showNew, setShowNew] = useState(false);
   const [customers, setCustomers] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
-  const [newQuote, setNewQuote, clearNewQuote] = useLocalStorage("draft:quote-create", { customerId: "", templateId: "", offerInstallments: false });
+  const [newQuote, setNewQuote, clearNewQuote] = useLocalStorage("draft:quote-create", { customerId: "", templateId: "", offerInstallments: false, introText: "", outroText: "" });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -44,6 +44,14 @@ export default function QuotesPage() {
     loadQuotes();
     api.customers().then(d => setCustomers(d.items || []));
     api.quoteTemplates().then(setTemplates).catch(() => {});
+    api.settings().then((s: any) => {
+      setNewQuote((cur: any) => ({
+        ...cur,
+        introText: cur.introText || s?.quoteIntroTemplate || "",
+        outroText: cur.outroText || s?.quoteOutroTemplate || "",
+      }));
+    }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => { loadQuotes(); }, [statusFilter, customerFilter]);
@@ -57,8 +65,8 @@ export default function QuotesPage() {
 
     try {
       const created = newQuote.templateId
-        ? await api.createQuote({ customerId: newQuote.customerId, templateId: newQuote.templateId })
-        : await api.createQuote({ customerId: newQuote.customerId });
+        ? await api.createQuote({ customerId: newQuote.customerId, templateId: newQuote.templateId, introText: newQuote.introText || undefined, outroText: newQuote.outroText || undefined })
+        : await api.createQuote({ customerId: newQuote.customerId, introText: newQuote.introText || undefined, outroText: newQuote.outroText || undefined });
 
       if (newQuote.offerInstallments) {
         clearNewQuote();
@@ -155,6 +163,14 @@ export default function QuotesPage() {
                   <button type="button" onClick={() => setNewQuote({...newQuote, offerInstallments: true})} className={`flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${newQuote.offerInstallments ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}>Ratenzahlung anbieten</button>
                 </div>
                 {newQuote.offerInstallments && <p className="mt-1 text-xs text-muted">Nach dem Anlegen öffnet sich direkt das Preisangebot-Modal zum Einstellen der Zahlungsoptionen.</p>}
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Einleitungstext</label>
+                <textarea rows={2} value={newQuote.introText} onChange={e => setNewQuote({...newQuote, introText: e.target.value})} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Schlusstext</label>
+                <textarea rows={2} value={newQuote.outroText} onChange={e => setNewQuote({...newQuote, outroText: e.target.value})} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
               </div>
               <div className="flex gap-2"><button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Erstellen</button><button type="button" onClick={() => { setShowNew(false); setFieldErrors({}); }} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button></div>
             </form>

@@ -27,35 +27,16 @@ export default function ContractsDashboardPage() {
   const [items, setItems] = useState<any[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [templates, setTemplates] = useState<any[]>([]);
-  const [creatingFor, setCreatingFor] = useState<any | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState("");
-  const [creating, setCreating] = useState(false);
 
   function load() {
     setLoading(true);
-    Promise.all([api.contractTriage(), api.contractTemplates()])
-      .then(([triage, tpl]) => { setItems(triage); setTemplates(tpl); })
+    api.contractTriage()
+      .then(setItems)
       .catch(() => setError("Übersicht konnte nicht geladen werden"))
       .finally(() => setLoading(false));
   }
 
   useEffect(() => { load(); }, []);
-
-  async function createContract() {
-    if (!creatingFor || !selectedTemplateId) return;
-    setCreating(true);
-    try {
-      const req: any = { contractTemplateId: selectedTemplateId };
-      if (creatingFor.kind === "quote") req.quoteId = creatingFor.id;
-      else req.subscriptionId = creatingFor.id;
-      const contract = await api.createAgencyContract(req);
-      window.location.href = `/contracts/${contract.id}`;
-    } catch (e: any) {
-      setError(e?.message || "Vertrag konnte nicht angelegt werden");
-      setCreating(false);
-    }
-  }
 
   return (
     <div className="p-8">
@@ -65,26 +46,6 @@ export default function ContractsDashboardPage() {
       </div>
 
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">×</button></div>}
-
-      {creatingFor && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setCreatingFor(null)}>
-          <div className="bg-surface rounded-xl border border-border shadow-lg w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold mb-1">Vertrag erstellen</h2>
-            <p className="text-sm text-muted mb-4">{creatingFor.customerName} — {creatingFor.title}</p>
-            <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Vertragsart</label>
-            <select value={selectedTemplateId} onChange={e => setSelectedTemplateId(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg mb-4">
-              <option value="">Bitte wählen...</option>
-              {templates.filter(t => t.isActive).map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-            <div className="flex justify-end gap-3">
-              <button onClick={() => setCreatingFor(null)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Abbrechen</button>
-              <button onClick={createContract} disabled={!selectedTemplateId || creating} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50">
-                {creating ? "Wird angelegt..." : "Anlegen"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {columns.map(col => {
@@ -108,12 +69,12 @@ export default function ContractsDashboardPage() {
                           {contractStatusMap[item.contractStatus]?.label || item.contractStatus}
                         </Link>
                       ) : (
-                        <button
-                          onClick={() => { setCreatingFor(item); setSelectedTemplateId(""); }}
+                        <Link
+                          href={`/contracts/new?${item.kind === "quote" ? "quoteId" : "subscriptionId"}=${item.id}`}
                           className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover"
                         >
                           Vertrag erstellen
-                        </button>
+                        </Link>
                       )}
                     </div>
                   </div>
