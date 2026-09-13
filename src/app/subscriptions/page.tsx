@@ -345,15 +345,7 @@ export default function SubscriptionsPage() {
           <p className="text-sm text-muted mt-0.5">Auto-Abrechnung täglich 6:00 Uhr UTC · E-Mail-Versand automatisch</p>
         </div>
         <div className="flex gap-2">
-          {isAdmin && (
-            <button
-              onClick={handleTrigger}
-              disabled={triggerLoading}
-              className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background transition-colors disabled:opacity-50"
-            >
-              {triggerLoading ? "Läuft..." : "Jetzt abrechnen"}
-            </button>
-          )}
+          
           <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">+ Neues Abonnement</button>
         </div>
       </div>
