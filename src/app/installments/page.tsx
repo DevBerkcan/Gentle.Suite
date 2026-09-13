@@ -3,6 +3,7 @@ import { useEffect, useState, Fragment } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
+import ManualInstallmentModal from "./ManualInstallmentModal";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -28,6 +29,7 @@ export default function InstallmentsPage() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [sendingMandateId, setSendingMandateId] = useState<string | null>(null);
   const [authorizingId, setAuthorizingId] = useState<string | null>(null);
+  const [showManualModal, setShowManualModal] = useState(false);
 
   function loadSubs() {
     api.allSubs().then(setSubs).catch(() => setError("Ratenzahlungen konnten nicht geladen werden"));
@@ -106,7 +108,20 @@ export default function InstallmentsPage() {
           <h1 className="text-2xl font-bold">Ratenzahlungen</h1>
           <p className="text-sm text-muted mt-0.5">Kunden, die einen Gesamtbetrag in monatlichen Raten abbezahlen · eigene Rechnungsnummern-Serie „RA-“</p>
         </div>
+        <button onClick={() => setShowManualModal(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">+ Manuell Ratenzahlungsplan erstellen</button>
       </div>
+
+      {showManualModal && (
+        <ManualInstallmentModal
+          onClose={() => setShowManualModal(false)}
+          onCreated={() => {
+            setShowManualModal(false);
+            setSuccess("Ratenzahlungsplan wurde angelegt — die Mollie-Mandats-E-Mail wurde an den Kunden verschickt.");
+            setTimeout(() => setSuccess(""), 6000);
+            loadSubs();
+          }}
+        />
+      )}
 
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">×</button></div>}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
