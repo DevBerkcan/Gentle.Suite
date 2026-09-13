@@ -16,9 +16,10 @@ interface Props {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onMenuToggle?: () => void;
+  workspace?: "crm" | "contracts";
 }
 
-export default function TopHeader({ theme, onToggleTheme, onMenuToggle }: Props) {
+export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspace = "crm" }: Props) {
   const router = useRouter();
   const [user, setUser] = useState<{ fullName?: string; email?: string } | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
@@ -88,15 +89,37 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle }: Props)
     window.location.href = "/login";
   }
 
+  function switchWorkspace(target: "crm" | "contracts") {
+    if (target === workspace) return;
+    localStorage.setItem("workspace", target);
+    window.location.href = target === "crm" ? "/dashboard" : "/contracts";
+  }
+
   return (
     <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-6 shrink-0 z-40">
-      {/* Left — hamburger on mobile, brand wordmark on desktop */}
+      {/* Left — hamburger on mobile, brand wordmark + workspace switcher on desktop */}
       <button onClick={onMenuToggle} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-muted hover:text-text">
         <Menu className="w-5 h-5" />
       </button>
-      <Link href="/dashboard" className="hidden md:block brand-logo text-lg text-primary">
-        Gentle Suite<sup>®</sup>
-      </Link>
+      <div className="hidden md:flex items-center gap-4">
+        <Link href={workspace === "contracts" ? "/contracts" : "/dashboard"} className="brand-logo text-lg text-primary">
+          Gentle Suite<sup>®</sup>
+        </Link>
+        <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
+          <button
+            onClick={() => switchWorkspace("crm")}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${workspace === "crm" ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}
+          >
+            CRM
+          </button>
+          <button
+            onClick={() => switchWorkspace("contracts")}
+            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${workspace === "contracts" ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}
+          >
+            Verträge
+          </button>
+        </div>
+      </div>
 
       {/* Right actions */}
       <div className="flex items-center gap-2">

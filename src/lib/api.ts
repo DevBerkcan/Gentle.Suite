@@ -588,4 +588,35 @@ deleteServiceItem: (id: string) =>
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
+  // Contract Templates (Vertragsvorlagen)
+  contractTemplates: () => apiFetch<any[]>("/contracttemplates"),
+  createContractTemplate: (data: any) => apiFetch<any>("/contracttemplates", { method: "POST", body: JSON.stringify(data) }),
+  updateContractTemplate: (id: string, data: any) => apiFetch<any>(`/contracttemplates/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  deleteContractTemplate: (id: string) => apiFetch<any>(`/contracttemplates/${id}`, { method: "DELETE" }),
+  // Agency Contracts (Verträge)
+  contractTriage: () => apiFetch<any[]>("/agencycontracts/triage"),
+  agencyContracts: () => apiFetch<any[]>("/agencycontracts"),
+  agencyContract: (id: string) => apiFetch<any>(`/agencycontracts/${id}`),
+  agencyContractByQuote: (quoteId: string) => apiFetch<any>(`/agencycontracts/by-quote/${quoteId}`),
+  agencyContractBySubscription: (subscriptionId: string) => apiFetch<any>(`/agencycontracts/by-subscription/${subscriptionId}`),
+  createAgencyContract: (data: any) => apiFetch<any>("/agencycontracts", { method: "POST", body: JSON.stringify(data) }),
+  updateAgencyContractSections: (id: string, sections: any[]) => apiFetch<any>(`/agencycontracts/${id}/sections`, { method: "PUT", body: JSON.stringify({ sections }) }),
+  signAndSendAgencyContract: (id: string) => apiFetch<any>(`/agencycontracts/${id}/sign-and-send`, { method: "POST" }),
+  agencyContractPdf: (id: string) => `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/agencycontracts/${id}/pdf`,
+  agencyContractPdfBlob: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API}/api/agencycontracts/${id}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error(await res.text());
+    return res.blob();
+  },
+  // Agency Contract public signing (token link)
+  agencyContractApproval: (token: string) => apiFetch<any>(`/contract-approval/${token}`),
+  processAgencyContractApproval: (token: string, data: any) => apiFetch<any>(`/contract-approval/${token}`, { method: "POST", body: JSON.stringify(data) }),
+  agencyContractApprovalPdfBlob: async (token: string) => {
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API}/api/contract-approval/${token}/pdf`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.blob();
+  },
 };

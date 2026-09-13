@@ -101,6 +101,7 @@ export default function QuoteDetailPage() {
   const [transferring, setTransferring] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [agencyContract, setAgencyContract] = useState<any>(null);
 
   useEffect(() => {
     if (!id) return;
@@ -109,6 +110,7 @@ export default function QuoteDetailPage() {
     api.plans().then(setPlans).catch(() => {});
     api.paymentTerms().then(setPaymentTermCatalog).catch(() => {});
     api.legalTexts().then(setLegalTextCatalog).catch(() => {});
+    api.agencyContractByQuote(id).then(setAgencyContract).catch(() => setAgencyContract(null));
   }, [id]);
 
   useEffect(() => {
@@ -377,6 +379,15 @@ export default function QuoteDetailPage() {
           {isCurrentVersion && !editing && ["Draft", "Sent", "Viewed"].includes(quoteStatus) && <button disabled={deactivating} onClick={handleDeactivate} className="px-4 py-2 border border-border rounded-lg text-sm font-medium disabled:opacity-50">{deactivating ? "Wird deaktiviert..." : "Nicht aktiv"}</button>}
           {(isCurrentVersion && ["Draft", "Sent", "Viewed"].includes(quoteStatus)) && <button onClick={() => { setSendForm({ ...sendForm, recipientEmail: quote.primaryContactEmail || "" }); setShowSend(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>}
           {quoteStatus === "Accepted" && <button onClick={handleMarkAsOrdered} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">Auftrag bestätigen</button>}
+          {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.requiresAgencyContract && (
+            agencyContract ? (
+              <button onClick={() => router.push(`/contracts/${agencyContract.id}`)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">
+                Agenturvertrag ({agencyContract.status === "FullyExecuted" ? "abgeschlossen" : agencyContract.status === "SentForSignature" ? "wartet auf Unterschrift" : "Entwurf"})
+              </button>
+            ) : (
+              <button onClick={() => router.push("/contracts")} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Agenturvertrag anlegen</button>
+            )
+          )}
           {["Accepted", "Ordered"].includes(quoteStatus) && <button onClick={handleConvert} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-medium">→ Zur Rechnung</button>}
           {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.b2bAuthorityConfirmed && Number(quote.subtotalMonthly || 0) > 0 && (
             <button onClick={() => router.push(`/subscriptions?quoteId=${quote.id}`)} className="px-4 py-2 bg-emerald-700 text-white rounded-lg text-sm font-medium hover:bg-emerald-800">→ Zur Serienrechnung</button>

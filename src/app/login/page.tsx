@@ -13,7 +13,7 @@ export default function LoginPage() {
       const res = await api.login({ email, password });
       localStorage.setItem("token", res.token);
       localStorage.setItem("user", JSON.stringify(res));
-      window.location.href = "/dashboard";
+      window.location.href = "/workspace";
     } catch { setError("Ungültige Anmeldedaten"); }
   }
 

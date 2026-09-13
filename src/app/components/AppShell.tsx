@@ -2,10 +2,12 @@
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import Sidebar from "./Sidebar";
+import ContractsSidebar from "./ContractsSidebar";
 import TopHeader from "./TopHeader";
 import { Menu, X } from "lucide-react";
 
-const PUBLIC_PATHS = ["/login", "/approval", "/payment"];
+const PUBLIC_PATHS = ["/login", "/approval", "/payment", "/agency-contract"];
+const NO_SIDEBAR_PATHS = ["/workspace"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -13,12 +15,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [workspace, setWorkspace] = useState<"crm" | "contracts">("crm");
 
   useEffect(() => {
     setMounted(true);
     setHasToken(!!localStorage.getItem("token"));
     const saved = localStorage.getItem("theme") as "light" | "dark" | null;
     if (saved) setTheme(saved);
+    const savedWorkspace = localStorage.getItem("workspace") as "crm" | "contracts" | null;
+    if (savedWorkspace) setWorkspace(savedWorkspace);
   }, [pathname]);
 
   // Close sidebar on route change (mobile)
@@ -32,18 +37,20 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   const isPublic = PUBLIC_PATHS.some(p => pathname.startsWith(p)) || pathname === "/";
-  const showSidebar = mounted && hasToken && !isPublic;
+  const isNoSidebar = NO_SIDEBAR_PATHS.some(p => pathname.startsWith(p));
+  const showSidebar = mounted && hasToken && !isPublic && !isNoSidebar;
+  const SidebarComponent = workspace === "contracts" ? ContractsSidebar : Sidebar;
 
   if (!mounted) return <>{children}</>;
 
   if (showSidebar) {
     return (
       <div className="flex flex-col min-h-screen">
-        <TopHeader theme={theme} onToggleTheme={toggleTheme} onMenuToggle={() => setSidebarOpen(o => !o)} />
+        <TopHeader theme={theme} onToggleTheme={toggleTheme} onMenuToggle={() => setSidebarOpen(o => !o)} workspace={workspace} />
         <div className="flex flex-1 overflow-hidden">
           {/* Desktop sidebar */}
           <div className="hidden md:block shrink-0">
-            <Sidebar />
+            <SidebarComponent />
           </div>
           {/* Mobile sidebar overlay */}
           {sidebarOpen && (
@@ -53,7 +60,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 <button onClick={() => setSidebarOpen(false)} className="absolute top-3 right-3 p-1 rounded-lg hover:bg-background text-muted">
                   <X className="w-5 h-5" />
                 </button>
-                <Sidebar mobile />
+                <SidebarComponent mobile />
               </div>
             </div>
           )}
