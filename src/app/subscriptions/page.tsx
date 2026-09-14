@@ -206,7 +206,7 @@ export default function SubscriptionsPage() {
       const created = await api.createSub({
         customerId: form.customerId,
         planId: form.planId,
-        contractQuoteId: form.contractQuoteId,
+        contractQuoteId: form.contractQuoteId || null,
         businessCustomerConfirmed: form.businessCustomerConfirmed,
         contractDurationMonths: form.contractDurationMonths ? parseInt(form.contractDurationMonths) : null,
       });
@@ -570,13 +570,13 @@ export default function SubscriptionsPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-text mb-1">Angenommenes Vertragsangebot *</label>
-                <select required disabled={!form.customerId || eligibleQuotesLoading} value={form.contractQuoteId} onChange={e => setForm({ ...form, contractQuoteId: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-60">
-                  <option value="">{eligibleQuotesLoading ? "Wird geladen..." : "Bitte wählen..."}</option>
+                <label className="block text-sm font-medium text-text mb-1">Angenommenes Vertragsangebot (optional)</label>
+                <select disabled={!form.customerId || eligibleQuotesLoading} value={form.contractQuoteId} onChange={e => setForm({ ...form, contractQuoteId: e.target.value })} className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:opacity-60">
+                  <option value="">{eligibleQuotesLoading ? "Wird geladen..." : "Kein Angebot — Preis vom Tarif übernehmen"}</option>
                   {eligibleQuotes.map((q: any) => <option key={q.id} value={q.id}>{q.quoteNumber} · Version {q.version} · {Number(q.monthlyPrice).toFixed(2)} EUR/Monat</option>)}
                 </select>
                 {form.customerId && !eligibleQuotesLoading && eligibleQuotes.length === 0 && (
-                  <p className="mt-1 text-xs text-danger">Kein unterschriebenes Angebot mit monatlicher Position verfügbar. Bitte zuerst ein Angebot online unterschreiben lassen.</p>
+                  <p className="mt-1 text-xs text-muted">Kein unterschriebenes Angebot mit monatlicher Position verfügbar. Ohne Angebot wird der Preis des gewählten Tarifs verwendet.</p>
                 )}
                 {form.contractQuoteId && eligibleQuotes.some(q => q.id === form.contractQuoteId) && (
                   <p className="mt-1 text-xs text-success">Vertragsgrundlage übernommen: {eligibleQuotes.find(q => q.id === form.contractQuoteId)?.quoteNumber}</p>
@@ -597,9 +597,15 @@ export default function SubscriptionsPage() {
               </div>
               <label className="flex items-start gap-3 rounded-lg border border-border bg-background p-3 text-sm">
                 <input required type="checkbox" checked={form.businessCustomerConfirmed} onChange={e => setForm({ ...form, businessCustomerConfirmed: e.target.checked })} className="mt-1" />
-                <span>Ich bestätige, dass der Kunde als Unternehmer handelt (B2B) und das ausgewählte Angebot die Vertragsgrundlage für diese Serienrechnung ist.</span>
+                <span>
+                  Ich bestätige, dass der Kunde als Unternehmer handelt (B2B){form.contractQuoteId ? " und das ausgewählte Angebot die Vertragsgrundlage für diese Serienrechnung ist." : "."}
+                </span>
               </label>
-              <p className="text-xs text-muted">Der im unterschriebenen Angebot vereinbarte Monatsbetrag wird unveränderlich gespeichert. Erst danach versendet GentleSuite die einmalige Mollie-Zahlungseinrichtung; die Abrechnung startet ausschließlich nach einem gültigen Mandat.</p>
+              <p className="text-xs text-muted">
+                {form.contractQuoteId
+                  ? "Der im unterschriebenen Angebot vereinbarte Monatsbetrag wird unveränderlich gespeichert. Erst danach versendet GentleSuite die einmalige Mollie-Zahlungseinrichtung; die Abrechnung startet ausschließlich nach einem gültigen Mandat."
+                  : "Ohne Angebot wird der Monatspreis des gewählten Tarifs übernommen. Anschließend versendet GentleSuite die einmalige Mollie-Zahlungseinrichtung; die Abrechnung startet ausschließlich nach einem gültigen Mandat."}
+              </p>
             </div>
             <div className="flex justify-end gap-3 mt-6">
               <button type="button" onClick={() => setShowNew(false)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background transition-colors">Abbrechen</button>
