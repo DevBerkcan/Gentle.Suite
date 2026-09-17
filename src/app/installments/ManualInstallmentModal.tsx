@@ -13,6 +13,7 @@ export default function ManualInstallmentModal({ onClose, onCreated }: { onClose
   const [totalAmount, setTotalAmount] = useState<number>(0);
   const [downPaymentAmount, setDownPaymentAmount] = useState<number>(0);
   const [monthlyAmount, setMonthlyAmount] = useState<number>(0);
+  const [firstInstallmentDate, setFirstInstallmentDate] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -38,6 +39,7 @@ export default function ManualInstallmentModal({ onClose, onCreated }: { onClose
         downPaymentAmount: downPaymentAmount > 0 ? downPaymentAmount : null,
         monthlyAmount,
         businessCustomerConfirmed: confirmed,
+        firstInstallmentDate: firstInstallmentDate || null,
       });
       onCreated();
     } catch (e: any) {
@@ -87,6 +89,12 @@ export default function ManualInstallmentModal({ onClose, onCreated }: { onClose
               <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Rate/Monat (€)</label>
               <input type="number" step="0.01" min={0} value={monthlyAmount} onChange={e => setMonthlyAmount(+e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg" />
             </div>
+          </div>
+
+          <div>
+            <label className="text-xs text-muted block mb-1 uppercase tracking-wide">Datum der ersten Rate (optional)</label>
+            <input type="date" value={firstInstallmentDate} onChange={e => setFirstInstallmentDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg" />
+            <p className="mt-1 text-xs text-muted">Leer lassen, damit die erste Rate direkt nach Bestätigung des Mandats abgerechnet wird.</p>
           </div>
 
           {monthlyAmount > 0 && totalAmount > 0 && (

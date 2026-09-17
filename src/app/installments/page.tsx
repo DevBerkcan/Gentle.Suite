@@ -5,6 +5,7 @@ import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 import ManualInstallmentModal from "./ManualInstallmentModal";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
+import InfoPopover from "@/app/components/InfoPopover";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -115,7 +116,27 @@ export default function InstallmentsPage() {
           <h1 className="text-2xl font-bold">Ratenzahlungen</h1>
           <p className="text-sm text-muted mt-0.5">Kunden, die einen Gesamtbetrag in monatlichen Raten abbezahlen · eigene Rechnungsnummern-Serie „RA-“</p>
         </div>
-        <button onClick={() => setShowManualModal(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">+ Manuell Ratenzahlungsplan erstellen</button>
+        <div className="flex items-center gap-2">
+          <InfoPopover title="Wie funktioniert die Abrechnung?">
+            <p>
+              <strong>Anzahlung</strong> (falls beim Anlegen erfasst) wird sofort separat in Rechnung gestellt.
+            </p>
+            <p>
+              <strong>Erste Rate:</strong> fällig zum gesetzten „Datum der ersten Rate“ — oder, falls kein Datum
+              gesetzt wurde, sofort nach Bestätigung des Mollie-Mandats durch den Kunden (nicht erst zum nächsten
+              Kalendermonat).
+            </p>
+            <p>
+              Der tatsächliche Bankeinzug erfolgt danach gesetzlich bedingt erst <strong>14 Tage</strong> nach
+              Rechnungsstellung (SEPA-Vorankündigungsfrist).
+            </p>
+            <p>
+              <strong>Folgeraten</strong> werden automatisch im Ein-Monats-Abstand ab der vorherigen Rate abgerechnet
+              — ohne weiteres Zutun.
+            </p>
+          </InfoPopover>
+          <button onClick={() => setShowManualModal(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors">+ Manuell Ratenzahlungsplan erstellen</button>
+        </div>
       </div>
 
       {showManualModal && (
