@@ -144,8 +144,8 @@ function FailedResult({ failureMessage }: { failureMessage?: string | null }) {
         </p>
 
         <div className="mt-8 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
-          Bitte wenden Sie sich an uns, damit wir Ihnen einen neuen Einrichtungslink
-          zusenden — zum Beispiel mit einer anderen Karte oder Zahlungsart.
+          Sie erhalten in Kürze eine E-Mail mit einem neuen Einrichtungslink — gerne
+          dort mit einer anderen Karte oder Zahlungsart erneut versuchen.
         </div>
       </div>
     </section>
