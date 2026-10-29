@@ -14,12 +14,33 @@ const PdfPreview = dynamic(() => import("./PdfPreview"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-64">
-      <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      <div className="w-8 h-8 border-2 border-[#010A30] border-t-transparent rounded-full animate-spin" />
     </div>
   ),
 });
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+// ── Gentle Group Studios brand tokens (scoped to this public approval page only) ──
+// Navy #010A30 · Body #1B2140 · Muted #5B6180 · Light-on-navy #C9CDE0 · Hairline #DADDE8 · Fill #EEF0F6
+const BRAND_FONTS_HREF =
+  "https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap";
+const FONT_BODY = "font-['Public_Sans',system-ui,sans-serif]";
+const FONT_HEAD = "font-['Space_Grotesk',system-ui,sans-serif]";
+const BrandFonts = () => <link rel="stylesheet" href={BRAND_FONTS_HREF} />;
+
+const PAGE = `min-h-screen text-[#1B2140] antialiased ${FONT_BODY}`;
+const FOCUS = "focus:outline-none focus-visible:ring-2 focus-visible:ring-[#010A30] focus-visible:ring-offset-2 focus-visible:ring-offset-white";
+const FOCUS_ON_NAVY = "focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#010A30]";
+const BTN_PRIMARY = `${FONT_HEAD} uppercase tracking-[0.12em] text-sm font-bold bg-[#010A30] hover:bg-[#1B2140] text-white rounded-[2px] transition-colors disabled:opacity-50 ${FOCUS}`;
+const PANEL = "rounded-[2px] p-6 mb-8";
+const H2 = `${FONT_HEAD} border-t-[1.5px] border-[#010A30] pt-3 text-base sm:text-lg font-bold uppercase tracking-[0.06em] text-[#010A30] mb-1`;
+const LABEL = `${FONT_HEAD} block text-[11px] font-semibold uppercase tracking-[0.15em] text-[#5B6180] mb-1.5`;
+const INPUT = "w-full bg-white border border-[#DADDE8] rounded-[2px] px-4 py-2.5 text-[#1B2140] text-sm focus:outline-none focus:border-[#010A30] focus:ring-1 focus:ring-[#010A30]";
+const OPTION = "rounded-[2px] border p-4 text-sm leading-relaxed cursor-pointer transition-colors focus-within:ring-2 focus-within:ring-[#010A30] focus-within:ring-offset-1";
+const OPTION_ON = "border-[#010A30] bg-[#EEF0F6]";
+const OPTION_OFF = "border-[#DADDE8] bg-white hover:border-[#5B6180]";
+const RADIO = "mt-1 accent-[#010A30]";
 
 export default function ApprovalPage() {
   const { token } = useParams<{ token: string }>();
@@ -270,18 +291,20 @@ export default function ApprovalPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+      <div className={`${PAGE} bg-white flex items-center justify-center`}>
+        <BrandFonts />
+        <div className="w-8 h-8 border-2 border-[#010A30] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   if (expired) {
     return (
-      <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center text-white text-center px-4">
-        <div>
-          <p className="text-2xl font-semibold mb-2">Link abgelaufen</p>
-          <p className="text-slate-400 text-sm">
+      <div className={`${PAGE} bg-[#EEF0F6] flex items-center justify-center text-center px-4`}>
+        <BrandFonts />
+        <div className="max-w-md w-full bg-[#010A30] text-white rounded-[2px] px-6 py-10 sm:px-10">
+          <p className={`${FONT_HEAD} text-2xl font-bold uppercase tracking-[0.06em] mb-3`}>Link abgelaufen</p>
+          <p className="text-[#C9CDE0] text-sm leading-relaxed">
             Dieser Angebots-Link ist nicht mehr gültig. Bitte kontaktieren Sie uns.
           </p>
         </div>
@@ -291,21 +314,22 @@ export default function ApprovalPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center text-white text-center px-4">
-        <div className="max-w-sm w-full">
-          <div className="text-5xl mb-4">✅</div>
-          <p className="text-2xl font-semibold mb-2">Angebot angenommen</p>
-          <p className="text-slate-400 text-sm mb-8">
+      <div className={`${PAGE} bg-[#EEF0F6] flex items-center justify-center text-center px-4`}>
+        <BrandFonts />
+        <div className="max-w-md w-full bg-[#010A30] text-white rounded-[2px] px-6 py-10 sm:px-10">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-[2px] border-[1.5px] border-[#4ADE80]/70 bg-[#15803D]/20 text-3xl">✅</div>
+          <p className={`${FONT_HEAD} text-2xl font-bold uppercase tracking-[0.06em] mb-3`}>Angebot angenommen</p>
+          <p className="text-[#C9CDE0] text-sm leading-relaxed mb-8">
             Vielen Dank. Ihre Unterschrift wurde erfolgreich gespeichert.
           </p>
           <button
             onClick={downloadSignedPdf}
             disabled={downloading}
-            className="inline-flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className={`${FONT_HEAD} inline-flex items-center justify-center gap-2 w-full bg-white hover:bg-[#EEF0F6] text-[#010A30] uppercase tracking-[0.12em] text-sm font-bold px-6 py-3 rounded-[2px] transition-colors disabled:opacity-50 ${FOCUS_ON_NAVY}`}
           >
             {downloading ? (
               <>
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span className="w-4 h-4 border-2 border-[#010A30] border-t-transparent rounded-full animate-spin" />
                 Wird geladen…
               </>
             ) : (
@@ -324,10 +348,11 @@ export default function ApprovalPage() {
 
   if (declined) {
     return (
-      <div className="min-h-screen bg-[#1a1f2e] flex items-center justify-center text-white text-center px-4">
-        <div>
-          <p className="text-2xl font-semibold mb-2">Angebot abgelehnt</p>
-          <p className="text-slate-400 text-sm">
+      <div className={`${PAGE} bg-[#EEF0F6] flex items-center justify-center text-center px-4`}>
+        <BrandFonts />
+        <div className="max-w-md w-full bg-[#010A30] text-white rounded-[2px] px-6 py-10 sm:px-10">
+          <p className={`${FONT_HEAD} text-2xl font-bold uppercase tracking-[0.06em] mb-3`}>Angebot abgelehnt</p>
+          <p className="text-[#C9CDE0] text-sm leading-relaxed">
             Wir haben Ihre Rückmeldung erhalten und werden uns bei Ihnen melden.
           </p>
         </div>
@@ -340,45 +365,46 @@ export default function ApprovalPage() {
   const ZOOM_MAX = 3;
 
   return (
-    <div className="min-h-screen bg-[#1a1f2e] text-white">
-      <div ref={containerRef} className="max-w-2xl mx-auto px-4 py-12">
-        <div className="flex flex-col items-center text-center mb-10">
-          <div className="relative w-40 h-40 mb-6">
-            <div className="absolute inset-0 rounded-full bg-[#2a3147]" />
-            <div className="absolute inset-4 rounded-full bg-[#3b4568]" />
-            <div className="absolute inset-0 flex items-center justify-center text-7xl select-none">📋</div>
+    <div className={`${PAGE} bg-white`}>
+      <BrandFonts />
+      <div ref={containerRef} className="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+        <div className="flex flex-col items-center text-center mb-10 bg-[#010A30] text-white rounded-[2px] px-6 py-10 sm:px-10 sm:py-12">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 mb-6">
+            <div className="absolute inset-0 rounded-[2px] border-[1.5px] border-[#C9CDE0]/40" />
+            <div className="absolute inset-3 rounded-[2px] bg-white/10" />
+            <div className="absolute inset-0 flex items-center justify-center text-5xl sm:text-6xl select-none">📋</div>
           </div>
-          <h1 className="text-3xl font-bold mb-4">Angebot</h1>
-          <p className="text-slate-300 text-sm leading-relaxed max-w-md whitespace-pre-wrap">
+          <h1 className={`${FONT_HEAD} text-3xl sm:text-4xl font-bold uppercase tracking-[0.08em] mb-4`}>Angebot</h1>
+          <p className="text-[#C9CDE0] text-sm leading-relaxed max-w-md whitespace-pre-wrap">
             {quote?.introText || "Vielen Dank für Ihr Interesse. Bitte prüfen Sie das nachfolgende Dokument sorgfältig. Wenn Sie damit einverstanden sind, unterschreiben Sie es am Ende mittels digitaler Signatur. Im Anschluss können Sie das Dokument als PDF herunterladen."}
           </p>
           <button
             onClick={() => signRef.current?.scrollIntoView({ behavior: "smooth" })}
-            className="mt-6 flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold px-6 py-3 rounded-lg transition-colors"
+            className={`${FONT_HEAD} mt-8 flex items-center gap-2 bg-white hover:bg-[#EEF0F6] text-[#010A30] uppercase tracking-[0.12em] text-sm font-bold px-6 py-3 rounded-[2px] transition-colors ${FOCUS_ON_NAVY}`}
           >
             Jetzt unterschreiben <span>↓</span>
           </button>
         </div>
 
-        <div className="rounded-xl overflow-hidden border border-slate-700 mb-8">
-          <div className="bg-[#252b3b] flex items-center justify-between px-4 py-2 text-sm text-slate-300">
-            <span>PDF-Ansicht</span>
+        <div className="rounded-[2px] overflow-hidden border border-[#DADDE8] mb-8">
+          <div className="bg-[#010A30] flex items-center justify-between px-4 py-2 text-sm text-white">
+            <span className={`${FONT_HEAD} text-[11px] font-bold uppercase tracking-[0.15em]`}>PDF-Ansicht</span>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setScale((z) => Math.max(ZOOM_MIN, parseFloat(((z ?? 1) - ZOOM_STEP).toFixed(2))))}
                 disabled={(scale ?? 1) <= ZOOM_MIN}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1f2e] hover:bg-slate-700 disabled:opacity-30 text-base font-bold"
+                className={`w-7 h-7 flex items-center justify-center rounded-[2px] border border-white/25 hover:bg-white/10 disabled:opacity-30 text-base font-bold ${FOCUS_ON_NAVY}`}
                 title="Verkleinern"
               >
                 −
               </button>
-              <span className="w-12 text-center text-xs tabular-nums">
+              <span className="w-12 text-center text-xs tabular-nums text-[#C9CDE0]">
                 {Math.round((scale ?? 1) * 100)}%
               </span>
               <button
                 onClick={() => setScale((z) => Math.min(ZOOM_MAX, parseFloat(((z ?? 1) + ZOOM_STEP).toFixed(2))))}
                 disabled={(scale ?? 1) >= ZOOM_MAX}
-                className="w-7 h-7 flex items-center justify-center rounded bg-[#1a1f2e] hover:bg-slate-700 disabled:opacity-30 text-base font-bold"
+                className={`w-7 h-7 flex items-center justify-center rounded-[2px] border border-white/25 hover:bg-white/10 disabled:opacity-30 text-base font-bold ${FOCUS_ON_NAVY}`}
                 title="Vergrößern"
               >
                 +
@@ -388,7 +414,7 @@ export default function ApprovalPage() {
                   const isMobile = window.innerWidth < 768;
                   setScale(isMobile ? 0.59 : 1);
                 }}
-                className="text-xs px-2 py-1 rounded bg-[#1a1f2e] hover:bg-slate-700"
+                className={`text-xs px-2 py-1 rounded-[2px] border border-white/25 hover:bg-white/10 ${FOCUS_ON_NAVY}`}
                 title="Zurücksetzen"
               >
                 1:1
@@ -396,7 +422,7 @@ export default function ApprovalPage() {
               <button
                 onClick={downloadSignedPdf}
                 disabled={downloading}
-                className="hover:text-white ml-1 disabled:opacity-40"
+                className={`text-[#C9CDE0] hover:text-white ml-1 px-1 rounded-[2px] disabled:opacity-40 ${FOCUS_ON_NAVY}`}
                 title="Herunterladen"
               >
                 ⬇
@@ -406,7 +432,7 @@ export default function ApprovalPage() {
 
           <div
             ref={viewerRef}
-            className="bg-[#2a3147] overflow-hidden relative"
+            className="bg-[#EEF0F6] overflow-hidden relative"
             style={{
               maxHeight: 600,
               cursor: (scale ?? 1) > 1 ? (isPanning ? "grabbing" : "grab") : "default",
@@ -442,12 +468,12 @@ export default function ApprovalPage() {
             onTouchEnd={() => { panStart.current = null; }}
           >
             {pdfLoadError || !pdfBlobUrl ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-4 p-6 text-slate-400 text-sm text-center">
+              <div className="flex flex-col items-center justify-center h-64 gap-4 p-6 text-[#5B6180] text-sm text-center">
                 <p>Das PDF konnte nicht geladen werden.</p>
                 <button
                   onClick={downloadSignedPdf}
                   disabled={downloading}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-indigo-500 transition-colors disabled:opacity-50"
+                  className={`${BTN_PRIMARY} px-5 py-2.5`}
                 >
                   PDF herunterladen
                 </button>
@@ -476,23 +502,23 @@ export default function ApprovalPage() {
         </div>
 
         {quote?.outroText && (
-          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
-            <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{quote.outroText}</p>
+          <div className={`${PANEL} bg-[#EEF0F6]`}>
+            <p className="text-[#1B2140] text-sm leading-relaxed whitespace-pre-wrap">{quote.outroText}</p>
           </div>
         )}
 
         {(quote?.legalTextBlockOptions?.length ?? 0) > 0 && (
-          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
-            <h2 className="text-lg font-semibold mb-1">Beigefügte Rechtsdokumente</h2>
-            <p className="text-slate-400 text-xs mb-4">Diese Dokumente sind Teil dieses Angebots.</p>
-            <div className="space-y-2">
+          <div className="mb-8">
+            <h2 className={H2}>Beigefügte Rechtsdokumente</h2>
+            <p className="text-[#5B6180] text-xs mb-4">Diese Dokumente sind Teil dieses Angebots.</p>
+            <div className="border-t border-[#DADDE8]">
               {quote!.legalTextBlockOptions!.map((lt: any) => (
-                <div key={lt.key} className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-[#1a1f2e] px-4 py-3 text-sm">
-                  <span className="text-white">{lt.title}</span>
+                <div key={lt.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 border-b border-[#DADDE8] px-1 py-3 text-sm">
+                  <span className="text-[#1B2140] font-medium">{lt.title}</span>
                   {lt.attachmentFileName ? (
-                    <a href={`${API}/api/approval/${token}/legal/${lt.key}`} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline text-xs shrink-0">{lt.attachmentFileName} herunterladen</a>
+                    <a href={`${API}/api/approval/${token}/legal/${lt.key}`} target="_blank" rel="noopener noreferrer" className={`text-[#010A30] font-semibold underline decoration-[#DADDE8] underline-offset-4 hover:decoration-[#010A30] text-xs shrink-0 break-all rounded-[2px] ${FOCUS}`}>{lt.attachmentFileName} herunterladen</a>
                   ) : (
-                    <span className="text-slate-400 text-xs shrink-0">siehe Angebots-PDF</span>
+                    <span className="text-[#5B6180] text-xs shrink-0">siehe Angebots-PDF</span>
                   )}
                 </div>
               ))}
@@ -501,16 +527,16 @@ export default function ApprovalPage() {
         )}
 
         {(quote?.paymentTermOptions?.length ?? 0) > 0 && (
-          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
-            <h2 className="text-lg font-semibold mb-1">Zahlungsbedingung wählen *</h2>
-            <p className="text-slate-400 text-xs mb-4">Bitte wählen Sie eine der folgenden Zahlungsbedingungen aus.</p>
+          <div className="mb-8">
+            <h2 className={H2}>Zahlungsbedingung wählen *</h2>
+            <p className="text-[#5B6180] text-xs mb-4">Bitte wählen Sie eine der folgenden Zahlungsbedingungen aus.</p>
             <div className="space-y-3">
               {quote!.paymentTermOptions!.map((pt: any) => (
-                <label key={pt.key} className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenPaymentTermKey === pt.key ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
-                  <input type="radio" name="paymentTerm" className="mt-1" checked={chosenPaymentTermKey === pt.key} onChange={() => setChosenPaymentTermKey(pt.key)} />
+                <label key={pt.key} className={`flex items-start gap-3 ${OPTION} ${chosenPaymentTermKey === pt.key ? OPTION_ON : OPTION_OFF}`}>
+                  <input type="radio" name="paymentTerm" className={RADIO} checked={chosenPaymentTermKey === pt.key} onChange={() => setChosenPaymentTermKey(pt.key)} />
                   <span>
-                    <span className="block font-medium text-white">{pt.title}</span>
-                    <span className="block text-slate-400 mt-0.5">{pt.content}</span>
+                    <span className="block font-semibold text-[#010A30]">{pt.title}</span>
+                    <span className="block text-[#5B6180] mt-0.5">{pt.content}</span>
                   </span>
                 </label>
               ))}
@@ -519,30 +545,30 @@ export default function ApprovalPage() {
         )}
 
         {(quote?.installmentPeriodOptionsMonths?.length ?? 0) > 0 && (quote?.subtotalOneTime ?? 0) > 0 && (
-          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
-            <h2 className="text-lg font-semibold mb-1">Zahlungsweise wählen *</h2>
-            <p className="text-slate-400 text-xs mb-4">Sie können den einmaligen Betrag sofort oder in gleichen Monatsraten bezahlen.</p>
+          <div className="mb-8">
+            <h2 className={H2}>Zahlungsweise wählen *</h2>
+            <p className="text-[#5B6180] text-xs mb-4">Sie können den einmaligen Betrag sofort oder in gleichen Monatsraten bezahlen.</p>
             <div className="space-y-3">
-              <label className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${installmentChoiceMade && chosenInstallmentMonths === null ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+              <label className={`flex items-start gap-3 ${OPTION} ${installmentChoiceMade && chosenInstallmentMonths === null ? OPTION_ON : OPTION_OFF}`}>
                 <input
                   type="radio"
                   name="installmentChoice"
-                  className="mt-1"
+                  className={RADIO}
                   checked={installmentChoiceMade && chosenInstallmentMonths === null}
                   onChange={() => { setChosenInstallmentMonths(null); setInstallmentChoiceMade(true); }}
                 />
-                <span className="block font-medium text-white">Gesamtbetrag jetzt bezahlen ({quote!.subtotalOneTime!.toFixed(2)} €)</span>
+                <span className="block font-semibold text-[#010A30] tabular-nums">Gesamtbetrag jetzt bezahlen ({quote!.subtotalOneTime!.toFixed(2)} €)</span>
               </label>
               {quote!.installmentPeriodOptionsMonths!.map((m: number) => (
-                <label key={m} className={`flex items-start gap-3 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenInstallmentMonths === m ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                <label key={m} className={`flex items-start gap-3 ${OPTION} ${chosenInstallmentMonths === m ? OPTION_ON : OPTION_OFF}`}>
                   <input
                     type="radio"
                     name="installmentChoice"
-                    className="mt-1"
+                    className={RADIO}
                     checked={chosenInstallmentMonths === m}
                     onChange={() => { setChosenInstallmentMonths(m); setInstallmentChoiceMade(true); }}
                   />
-                  <span className="block font-medium text-white">{m} monatliche Raten à {(quote!.subtotalOneTime! / m).toFixed(2)} €</span>
+                  <span className="block font-semibold text-[#010A30] tabular-nums">{m} monatliche Raten à {(quote!.subtotalOneTime! / m).toFixed(2)} €</span>
                 </label>
               ))}
             </div>
@@ -550,23 +576,23 @@ export default function ApprovalPage() {
         )}
 
         {(quote?.paymentPlanOptions?.length ?? 0) > 0 && (
-          <div className="bg-[#252b3b] rounded-xl p-6 border border-slate-700 mb-8">
-            <h2 className="text-lg font-semibold mb-1">Zahlungsart wählen *</h2>
-            <p className="text-slate-400 text-xs mb-4">Wählen Sie, wie Sie diesen Auftrag bezahlen möchten.</p>
+          <div className="mb-8">
+            <h2 className={H2}>Zahlungsart wählen *</h2>
+            <p className="text-[#5B6180] text-xs mb-4">Wählen Sie, wie Sie diesen Auftrag bezahlen möchten.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {quote!.paymentPlanOptions!.map((opt: any) => (
-                <label key={opt.key} className={`flex flex-col gap-2 rounded-lg border p-4 text-sm leading-relaxed cursor-pointer transition-colors ${chosenPaymentPlanOptionKey === opt.key ? "border-indigo-500 bg-indigo-500/10" : "border-slate-700 bg-[#1a1f2e]"}`}>
+                <label key={opt.key} className={`flex flex-col gap-2 ${OPTION} ${chosenPaymentPlanOptionKey === opt.key ? OPTION_ON : OPTION_OFF}`}>
                   <div className="flex items-start gap-3">
-                    <input type="radio" name="paymentPlan" className="mt-1" checked={chosenPaymentPlanOptionKey === opt.key} onChange={() => setChosenPaymentPlanOptionKey(opt.key)} />
+                    <input type="radio" name="paymentPlan" className={RADIO} checked={chosenPaymentPlanOptionKey === opt.key} onChange={() => setChosenPaymentPlanOptionKey(opt.key)} />
                     <span>
-                      <span className="block font-medium text-white">{opt.title}</span>
-                      <span className="block text-slate-400 mt-0.5 text-xs">{opt.subtitle}</span>
+                      <span className={`${FONT_HEAD} block font-bold uppercase tracking-[0.06em] text-[#010A30]`}>{opt.title}</span>
+                      <span className="block text-[#5B6180] mt-0.5 text-xs">{opt.subtitle}</span>
                     </span>
                   </div>
-                  <div className="pl-7 text-xs text-slate-300">
-                    {opt.downPayment ? <div>Anzahlung: {Number(opt.downPayment).toFixed(2)} €</div> : null}
-                    {opt.monthlyAmount ? <div>{Number(opt.monthlyAmount).toFixed(2)} € / Monat{opt.months ? ` über ${opt.months} Monate` : ""}</div> : null}
-                    <div className="font-medium text-white">Gesamt: {Number(opt.totalAmount).toFixed(2)} €</div>
+                  <div className="ml-7 text-xs text-[#1B2140] tabular-nums">
+                    {opt.downPayment ? <div className="border-b border-[#DADDE8] py-1">Anzahlung: {Number(opt.downPayment).toFixed(2)} €</div> : null}
+                    {opt.monthlyAmount ? <div className="border-b border-[#DADDE8] py-1">{Number(opt.monthlyAmount).toFixed(2)} € / Monat{opt.months ? ` über ${opt.months} Monate` : ""}</div> : null}
+                    <div className="mt-1 bg-[#EEF0F6] px-2 py-1.5 font-bold text-[#010A30]">Gesamt: {Number(opt.totalAmount).toFixed(2)} €</div>
                   </div>
                 </label>
               ))}
@@ -574,11 +600,11 @@ export default function ApprovalPage() {
           </div>
         )}
 
-        <div ref={signRef} className="bg-[#252b3b] rounded-xl p-6 border border-slate-700">
+        <div ref={signRef} className="bg-white rounded-[2px] border border-[#DADDE8] border-t-[3px] border-t-[#010A30] p-5 sm:p-6">
           {quote?.customerName && (
             <div className="mb-5">
-              <label className="block text-sm font-medium text-slate-300 mb-1">Unternehmen</label>
-              <div className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-slate-400 text-sm select-none">
+              <label className={LABEL}>Unternehmen</label>
+              <div className="w-full bg-[#EEF0F6] border border-[#DADDE8] rounded-[2px] px-4 py-2.5 text-[#5B6180] text-sm select-none">
                 {quote.customerName}
               </div>
             </div>
@@ -586,31 +612,31 @@ export default function ApprovalPage() {
 
           <div className="grid gap-4 sm:grid-cols-2 mb-5">
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Vor- und Nachname *</label>
-              <input required value={signerName} onChange={(e) => setSignerName(e.target.value)} className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+              <label className={LABEL}>Vor- und Nachname *</label>
+              <input required value={signerName} onChange={(e) => setSignerName(e.target.value)} className={INPUT} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1">Geschäftliche E-Mail-Adresse *</label>
-              <input required type="email" value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} className="w-full bg-[#1a1f2e] border border-slate-700 rounded-lg px-4 py-2.5 text-white text-sm focus:outline-none focus:border-indigo-500" />
+              <label className={LABEL}>Geschäftliche E-Mail-Adresse *</label>
+              <input required type="email" value={signerEmail} onChange={(e) => setSignerEmail(e.target.value)} className={INPUT} />
             </div>
           </div>
 
-          <label className="mb-5 flex items-start gap-3 rounded-lg border border-slate-700 bg-[#1a1f2e] p-4 text-sm leading-relaxed text-slate-300">
-            <input type="checkbox" checked={b2bAuthorityConfirmed} onChange={(e) => setB2bAuthorityConfirmed(e.target.checked)} className="mt-1" />
+          <label className="mb-5 flex items-start gap-3 rounded-[2px] border border-[#DADDE8] bg-[#EEF0F6] p-4 text-sm leading-relaxed text-[#1B2140] cursor-pointer focus-within:ring-2 focus-within:ring-[#010A30] focus-within:ring-offset-1">
+            <input type="checkbox" checked={b2bAuthorityConfirmed} onChange={(e) => setB2bAuthorityConfirmed(e.target.checked)} className="mt-1 accent-[#010A30]" />
             <span>Ich handle als Unternehmer im Sinne des § 14 BGB für das oben genannte Unternehmen und bin berechtigt, dieses Angebot verbindlich anzunehmen.</span>
           </label>
 
           <div className="mb-2">
-            <label className="block text-sm font-medium text-slate-300 mb-1">Unterschrift</label>
+            <label className={LABEL}>Unterschrift</label>
           </div>
 
           <div
-            className="relative rounded-lg overflow-hidden bg-white mb-4"
+            className="relative rounded-[2px] overflow-hidden bg-white border border-[#DADDE8] mb-4"
             style={{ touchAction: "none" }}
           >
             <button
               onClick={clearCanvas}
-              className="absolute top-2 right-2 z-10 text-slate-400 hover:text-slate-600 text-lg leading-none bg-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm"
+              className={`absolute top-2 right-2 z-10 text-[#5B6180] hover:text-[#010A30] text-lg leading-none bg-white border border-[#DADDE8] rounded-[2px] w-7 h-7 flex items-center justify-center ${FOCUS}`}
               title="Zurücksetzen"
               type="button"
             >
@@ -636,13 +662,13 @@ export default function ApprovalPage() {
             type="button"
             onClick={handleSign}
             disabled={submitting}
-            className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors mb-6"
+            className={`${BTN_PRIMARY} w-full py-3.5 mb-6`}
           >
             {submitting ? "Wird gespeichert…" : "Jetzt unterschreiben"}
           </button>
 
-          <details className="group">
-            <summary className="text-sm text-slate-400 cursor-pointer hover:text-slate-300 list-none flex items-center gap-1 select-none">
+          <details className="group border-t border-[#DADDE8] pt-4">
+            <summary className={`${FONT_HEAD} text-xs font-semibold uppercase tracking-[0.15em] text-[#5B6180] cursor-pointer hover:text-[#010A30] list-none flex items-center gap-1.5 select-none rounded-[2px] w-fit ${FOCUS}`}>
               <span className="group-open:rotate-90 transition-transform inline-block">›</span>
               Angebot ablehnen
             </summary>
@@ -652,13 +678,13 @@ export default function ApprovalPage() {
                 onChange={(e) => setComment(e.target.value)}
                 rows={3}
                 placeholder="Bitte geben Sie einen Ablehnungsgrund an…"
-                className="w-full bg-[#1a1f2e] border border-slate-600 rounded-lg px-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-red-500 text-sm resize-none mb-3"
+                className="w-full bg-white border border-[#DADDE8] rounded-[2px] px-4 py-2.5 text-[#1B2140] placeholder-[#5B6180]/70 focus:outline-none focus:border-[#B42318] focus:ring-1 focus:ring-[#B42318] text-sm resize-none mb-3"
               />
               <button
                 type="button"
                 onClick={handleDecline}
                 disabled={submitting}
-                className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm"
+                className={`${FONT_HEAD} w-full bg-white border-[1.5px] border-[#B42318] text-[#B42318] hover:bg-[#B42318] hover:text-white disabled:opacity-50 uppercase tracking-[0.12em] font-bold py-2.5 rounded-[2px] transition-colors text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318] focus-visible:ring-offset-2`}
               >
                 Angebot ablehnen
               </button>

@@ -441,3 +441,95 @@ export interface ServiceCategory {
   sortOrder: number;
   items: ServiceCatalogItem[];
 }
+
+// === Schätzungen (Aufwandsschätzungen) ===
+export type EstimateStatus = "Draft" | "Sent" | "Accepted" | "Rejected";
+export type EstimateClassification = "intern" | "vertraulich" | "öffentlich";
+
+export interface EstimateItem {
+  label?: string | null;
+  text: string;
+}
+
+export interface EstimateModule {
+  title: string;
+  description?: string | null;
+  priceFrom?: number | null;
+  priceTo?: number | null;
+}
+
+export interface EstimateTimelineRow {
+  phase: string;
+  period?: string | null;
+  result?: string | null;
+}
+
+export interface EstimateContent {
+  basis: EstimateItem[];
+  decisions: EstimateItem[];
+  architecture: EstimateItem[];
+  implementation: EstimateItem[];
+  pilot: EstimateItem[];
+  modules: EstimateModule[];
+  extensions: EstimateModule[];
+  assumptions: EstimateItem[];
+  exclusions: EstimateItem[];
+  risks: EstimateItem[];
+  openQuestions: EstimateItem[];
+  timeline: EstimateTimelineRow[];
+  nextSteps: EstimateItem[];
+}
+
+export interface EstimateListItem {
+  id: Id;
+  estimateNumber: string;
+  title: string;
+  customerId?: Id | null;
+  customerName?: string | null;
+  version: string;
+  fixedPrice?: number | null;
+  modulesFrom: number;
+  modulesTo: number;
+  status: EstimateStatus;
+  date: string;
+  createdAt: string;
+}
+
+/** Create/update payload (full replace). */
+export interface SaveEstimateRequest {
+  customerId?: Id | null;
+  customerDisplayName?: string | null;
+  title: string;
+  subtitle?: string | null;
+  version?: string | null;
+  date?: string | null;
+  preparedBy?: string | null;
+  approvedBy?: string | null;
+  responsible?: string | null;
+  classification?: string | null;
+  status?: EstimateStatus | null;
+  fixedPrice?: number | null;
+  fixedPriceLabel?: string | null;
+  situationText?: string | null;
+  proposalText?: string | null;
+  costNote?: string | null;
+  operationText?: string | null;
+  timelineNote?: string | null;
+  content: EstimateContent;
+}
+
+export interface EstimateDetail extends SaveEstimateRequest {
+  id: Id;
+  estimateNumber: string;
+  customerName?: string | null;
+  version: string;
+  date: string;
+  classification: string;
+  status: EstimateStatus;
+  modulesFrom: number;
+  modulesTo: number;
+  extensionsFrom: number;
+  extensionsTo: number;
+  createdAt: string;
+  updatedAt?: string | null;
+}

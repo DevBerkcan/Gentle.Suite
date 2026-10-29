@@ -28,12 +28,12 @@ export default function PdfPreview({ file, numPages, scale, onLoadSuccess, onLoa
       onLoadError={onLoadError}
       loading={
         <div className="flex items-center justify-center h-64">
-          <div className="w-8 h-8 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+          <div className="w-8 h-8 border-2 border-[#010A30] border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >
       {Array.from({ length: numPages }, (_, i) => (
-        <div key={i} className="mb-3 shadow-lg">
+        <div key={i} className="mb-3 border border-[#DADDE8] shadow-[0_1px_2px_rgba(1,10,48,0.08)]">
           <Page pageNumber={i + 1} scale={scale ?? 1} renderTextLayer={true} renderAnnotationLayer={false} />
         </div>
       ))}

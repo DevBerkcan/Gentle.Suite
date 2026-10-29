@@ -5,7 +5,8 @@
 @tailwind utilities;
 
 :root {
-  --color-background:    247 248 250;
+  /* Brand light (#F0EFF4, gentlegroup.de) as the page background */
+  --color-background:    240 239 244;
   --color-surface:       255 255 255;
   --color-text:          16 24 40;
   --color-muted:         102 112 133;
@@ -48,6 +49,17 @@ body {
   font-family: Inter, system-ui, sans-serif;
   background: rgb(var(--color-background));
   color: rgb(var(--color-text));
+}
+
+/* Website look: Clash Display headings, pill-shaped primary actions */
+h1, h2 {
+  font-family: 'Clash Display', 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+button.bg-primary,
+a.bg-primary {
+  border-radius: 9999px;
 }
 
 select {
