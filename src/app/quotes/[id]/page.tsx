@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import PreisangebotModal from "./PreisangebotModal";
+import AgentImportModal from "./AgentImportModal";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Draft: { label: "Entwurf", cls: "bg-gray-100 text-muted" },
@@ -98,6 +99,7 @@ export default function QuoteDetailPage() {
   const [showSend, setShowSend] = useState(false);
   const [sendForm, setSendForm] = useState({ recipientEmail: "", message: "", requireSignature: true, expirationDays: 14 });
   const [showPreisangebot, setShowPreisangebot] = useState(false);
+  const [showAgentImport, setShowAgentImport] = useState(false);
   const [transferring, setTransferring] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
@@ -608,7 +610,10 @@ export default function QuoteDetailPage() {
                 <button onClick={() => { setLines(quote.lines || []); setEditing(false); }} className="px-3 py-1.5 border border-border rounded-lg text-sm">Abbrechen</button>
               </div>
             ) : (
-              <button onClick={() => setEditing(true)} className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium hover:bg-background">Bearbeiten</button>
+              <div className="flex gap-2">
+                {isCurrentVersion && !editingHeader && <button onClick={() => setShowAgentImport(true)} className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium hover:bg-background">Vom Agent übernehmen</button>}
+                <button onClick={() => setEditing(true)} className="px-3 py-1.5 border border-border rounded-lg text-sm font-medium hover:bg-background">Bearbeiten</button>
+              </div>
             )
           )}
         </div>
@@ -809,6 +814,14 @@ export default function QuoteDetailPage() {
           quote={quote}
           onClose={() => setShowPreisangebot(false)}
           onSaved={(updated) => { setQuote(updated); setShowPreisangebot(false); setSuccess("Preisangebot gespeichert"); setTimeout(() => setSuccess(""), 3000); }}
+        />
+      )}
+
+      {showAgentImport && (
+        <AgentImportModal
+          quote={quote}
+          onClose={() => setShowAgentImport(false)}
+          onSaved={() => { setShowAgentImport(false); loadQuote(); setSuccess("Angebot vom Agent übernommen"); setTimeout(() => setSuccess(""), 3000); }}
         />
       )}
     </div>

@@ -2,21 +2,22 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Sun, Moon, Plus, Receipt, FileText, Wallet, FolderKanban, ChevronDown, Settings, LogOut, Search, X, Menu } from "lucide-react";
+import { Sun, Moon, Plus, Receipt, FileText, Wallet, Ruler, ChevronDown, Settings, LogOut, Search, X, Menu } from "lucide-react";
 import { api } from "@/lib/api";
+import { workspaces, type Workspace } from "./workspaces";
 
 const quickActions = [
   { label: "Rechnung erstellen", href: "/invoices", icon: Receipt },
   { label: "Angebot erstellen", href: "/quotes", icon: FileText },
   { label: "Ausgabe buchen", href: "/expenses", icon: Wallet },
-  { label: "Projekt anlegen", href: "/projects", icon: FolderKanban },
+  { label: "Schätzung erstellen", href: "/contracts/estimates", icon: Ruler },
 ];
 
 interface Props {
   theme: "light" | "dark";
   onToggleTheme: () => void;
   onMenuToggle?: () => void;
-  workspace?: "crm" | "contracts";
+  workspace?: Workspace;
 }
 
 export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspace = "crm" }: Props) {
@@ -89,35 +90,32 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
     window.location.href = "/login";
   }
 
-  function switchWorkspace(target: "crm" | "contracts") {
+  function switchWorkspace(target: Workspace) {
     if (target === workspace) return;
     localStorage.setItem("workspace", target);
-    window.location.href = target === "crm" ? "/dashboard" : "/contracts";
+    window.location.href = workspaces.find(w => w.key === target)!.home;
   }
 
   return (
-    <header className="h-14 bg-surface border-b border-border flex items-center justify-between px-6 shrink-0 z-40">
+    <header className="h-16 bg-navy text-white border-b border-white/10 flex items-center justify-between px-6 shrink-0 z-40">
       {/* Left — hamburger on mobile, brand wordmark + workspace switcher on desktop */}
-      <button onClick={onMenuToggle} className="md:hidden w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-muted hover:text-text">
+      <button onClick={onMenuToggle} className="md:hidden w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white">
         <Menu className="w-5 h-5" />
       </button>
-      <div className="hidden md:flex items-center gap-4">
-        <Link href={workspace === "contracts" ? "/contracts" : "/dashboard"} className="brand-logo text-lg text-primary">
+      <div className="hidden md:flex items-center gap-6">
+        <Link href={workspace === "contracts" ? "/contracts" : "/dashboard"} className="brand-logo text-xl text-white">
           Gentle Suite<sup>®</sup>
         </Link>
-        <div className="flex items-center gap-1 bg-background border border-border rounded-lg p-1">
-          <button
-            onClick={() => switchWorkspace("crm")}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${workspace === "crm" ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}
-          >
-            CRM
-          </button>
-          <button
-            onClick={() => switchWorkspace("contracts")}
-            className={`px-3 py-1 rounded-md text-xs font-medium transition-colors ${workspace === "contracts" ? "bg-surface shadow-sm text-text" : "text-muted hover:text-text"}`}
-          >
-            Verträge
-          </button>
+        <div className="flex items-center gap-1 border border-white/15 rounded-full p-1">
+          {workspaces.map(w => (
+            <button
+              key={w.key}
+              onClick={() => switchWorkspace(w.key)}
+              className={`px-4 py-1.5 rounded-full text-[11px] uppercase tracking-[0.15em] transition-colors ${workspace === w.key ? "bg-accent text-navy font-semibold" : "text-white/70 hover:text-white"}`}
+            >
+              {w.label}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -129,12 +127,12 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
           <button
             onClick={() => { setSearchOpen(true); setTimeout(() => searchInputRef.current?.focus(), 50); }}
             title="Suche (⌘K)"
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-muted hover:text-text"
+            className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white"
           >
             <Search className="w-4 h-4" />
           </button>
           {searchOpen && (
-            <div className="absolute right-0 top-full mt-2 w-96 bg-surface border border-border rounded-xl shadow-xl z-50">
+            <div className="absolute right-0 top-full mt-2 w-96 bg-surface text-text border border-border rounded-xl shadow-xl z-50">
               <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
                 <Search className="w-4 h-4 text-muted shrink-0" />
                 <input
@@ -154,7 +152,6 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
                     { key: "customers", label: "Kunden" },
                     { key: "invoices", label: "Rechnungen" },
                     { key: "quotes", label: "Angebote" },
-                    { key: "projects", label: "Projekte" },
                   ].map(({ key, label }) => {
                     const items = searchResults[key] ?? [];
                     if (!items.length) return null;
@@ -174,7 +171,7 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
                       </div>
                     );
                   })}
-                  {!searchResults.customers?.length && !searchResults.invoices?.length && !searchResults.quotes?.length && !searchResults.projects?.length && (
+                  {!searchResults.customers?.length && !searchResults.invoices?.length && !searchResults.quotes?.length && (
                     <div className="px-4 py-3 text-sm text-muted">Keine Ergebnisse für „{searchQuery}"</div>
                   )}
                 </div>
@@ -190,14 +187,14 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
         <div className="relative" ref={quickRef}>
           <button
             onClick={() => setQuickOpen(o => !o)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover transition-colors"
+            className="flex items-center gap-1.5 px-4 py-1.5 bg-accent text-navy rounded-full text-[11px] uppercase tracking-[0.15em] font-semibold hover:bg-white transition-colors"
           >
             <Plus className="w-4 h-4" />
             Neu
             <ChevronDown className="w-3 h-3 opacity-70" />
           </button>
           {quickOpen && (
-            <div className="absolute right-0 top-full mt-1 w-52 bg-surface border border-border rounded-xl shadow-lg py-1 z-50">
+            <div className="absolute right-0 top-full mt-1 w-52 bg-surface text-text border border-border rounded-xl shadow-lg py-1 z-50">
               {quickActions.map(a => (
                 <Link
                   key={a.href}
@@ -217,7 +214,7 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
         <button
           onClick={onToggleTheme}
           title={theme === "dark" ? "Light Mode" : "Dark Mode"}
-          className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-background transition-colors text-muted hover:text-text"
+          className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors text-white/70 hover:text-white"
         >
           {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
@@ -226,16 +223,16 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
         <div className="relative" ref={userRef}>
           <button
             onClick={() => setUserOpen(o => !o)}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-background transition-colors"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-white/10 transition-colors"
           >
-            <span className="w-7 h-7 rounded-full bg-primary text-white text-xs font-bold flex items-center justify-center shrink-0">
+            <span className="w-7 h-7 rounded-full bg-secondary text-navy text-xs font-bold flex items-center justify-center shrink-0">
               {initials}
             </span>
             <span className="text-sm font-medium max-w-32 truncate hidden sm:block">{user?.fullName ?? "—"}</span>
-            <ChevronDown className="w-3 h-3 text-muted hidden sm:block" />
+            <ChevronDown className="w-3 h-3 text-white/60 hidden sm:block" />
           </button>
           {userOpen && (
-            <div className="absolute right-0 top-full mt-1 w-56 bg-surface border border-border rounded-xl shadow-lg py-1 z-50">
+            <div className="absolute right-0 top-full mt-1 w-56 bg-surface text-text border border-border rounded-xl shadow-lg py-1 z-50">
               <div className="px-4 py-2.5 border-b border-border">
                 <p className="text-sm font-medium">{user?.fullName}</p>
                 <p className="text-xs text-muted">{user?.email}</p>

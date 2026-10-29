@@ -1,0 +1,95 @@
+{
+  "customerId": null,
+  "customerDisplayName": "KARAMAN GmbH",
+  "title": "Disposition & Fahrer-App",
+  "subtitle": "Ersteinschätzung MVP für Einsatzplanung, Fahrer-App und Leistungsnachweis",
+  "version": "1.0",
+  "preparedBy": "Berk-Can Atesoglu",
+  "approvedBy": "",
+  "responsible": "Berk-Can Atesoglu",
+  "classification": "vertraulich",
+  "status": "Draft",
+  "fixedPrice": 8000,
+  "fixedPriceLabel": "Zielpreis/Festpreis",
+  "situationText": "KARAMAN GmbH disponiert Fahrmischer für mehrere Auftraggeber, Werke und Baustellen. Einsatzplanung, Rückmeldungen der Fahrer und der Leistungsnachweis laufen heute über Telefon, Messenger und Excel. Ziel ist ein schlankes MVP, das Disposition, Fahrer-App und Abrechnungsgrundlage in einem System zusammenführt.",
+  "proposalText": "Wir schlagen eine webbasierte Anwendung mit einer Fahrer-App als Progressive Web App vor. Die Umsetzung erfolgt in kurzen Iterationen mit einem begleiteten Pilotbetrieb, bevor das System für alle Fahrzeuge ausgerollt wird.",
+  "costNote": "Alle Preise sind Pauschalen zzgl. gesetzlicher USt. Die Spannen dienen der Orientierung; der verbindliche Festpreis wird nach Klärung der offenen Fragen im Angebot festgelegt.",
+  "operationText": "Hosting, Updates und Monitoring als monatliche Pauschale, separates Angebot",
+  "timelineNote": "Der Zeitplan setzt eine Beauftragung bis Mitte November und eine zügige Klärung der offenen Fragen voraus.",
+  "content": {
+    "basis": [
+      { "label": "", "text": "Erstgespräch mit der Geschäftsführung und Beispieltage aus der aktuellen Disposition" },
+      { "label": "", "text": "Bestehende Excel-Auswertungen und Leistungsnachweise der Auftraggeber" },
+      { "label": "", "text": "Anforderungsliste zu Fahrer-App, Statusmeldungen und Export" }
+    ],
+    "decisions": [
+      { "label": "Plattform", "text": "Webanwendung für die Disposition, Fahrer-App als PWA (kein App-Store)" },
+      { "label": "Abrechnung", "text": "Leistungsnachweis als Export; die Rechnungsstellung bleibt im bestehenden System" },
+      { "label": "Umfang", "text": "MVP für einen Standort, weitere Standorte als Ausbaustufe" }
+    ],
+    "architecture": [
+      { "label": "Backend", "text": ".NET API mit SQL-Datenbank, gehostet in einem deutschen Rechenzentrum" },
+      { "label": "Disposition", "text": "Browser-Oberfläche für Einsatzplanung, Stammdaten und Auswertungen" },
+      { "label": "Fahrer-App", "text": "PWA mit Offline-Zwischenspeicher und GPS-Zeitstempel je Statusmeldung" }
+    ],
+    "implementation": [
+      { "label": "", "text": "Workshop und Klickprototyp, Abnahme des Regelwerks" },
+      { "label": "", "text": "Umsetzung in zweiwöchigen Iterationen mit Zwischenständen" },
+      { "label": "", "text": "Datenübernahme der Stammdaten aus Excel" }
+    ],
+    "pilot": [
+      { "label": "", "text": "Pilot mit 3–4 Fahrzeugen über zwei Wochen" },
+      { "label": "", "text": "Einweisung der Disposition und der Pilotfahrer vor Ort" },
+      { "label": "", "text": "Auswertung und Nachbesserung vor dem Go-Live" }
+    ],
+    "modules": [
+      { "title": "Analyse & Regelwerk", "description": "Workshop, Regelwerk mit Beispieltagen, Klickprototyp", "priceFrom": 800, "priceTo": 1100 },
+      { "title": "Stammdaten & Konditionen", "description": "Auftraggeber, Werke, Baustellen, Fahrer, Fahrmischer, Preise", "priceFrom": 1000, "priceTo": 1300 },
+      { "title": "Disposition & Einsatzplanung", "description": "Einsatzplan, Zuordnung, Abrechnungsart, Lesebestätigung", "priceFrom": 1500, "priceTo": 1900 },
+      { "title": "Fahrer-App & Einsatzerfassung", "description": "PWA, Statustasten mit GPS-Stempel, Offline-Betrieb", "priceFrom": 2300, "priceTo": 2800 },
+      { "title": "Leistungsnachweis & Export", "description": "Berechnung, Korrekturprotokoll, Auswertungen, Export", "priceFrom": 1300, "priceTo": 1700 },
+      { "title": "Test, Pilot & Go-Live", "description": "Pilot mit 3–4 Fahrzeugen, Einweisung, Go-Live-Begleitung", "priceFrom": 500, "priceTo": 700 }
+    ],
+    "extensions": [
+      { "title": "easybill-Anbindung", "description": "Automatische Übergabe der Leistungsnachweise an easybill", "priceFrom": 2500, "priceTo": 3500 },
+      { "title": "Lieferschein-Erkennung (KI)", "description": "Foto des Lieferscheins, automatische Übernahme der Daten", "priceFrom": 1500, "priceTo": 2500 },
+      { "title": "Native Apps & Geofencing", "description": "iOS/Android-Apps, automatische Statusmeldung an Werk und Baustelle", "priceFrom": 4500, "priceTo": 6500 },
+      { "title": "Live-Karte", "description": "Fahrzeugpositionen in Echtzeit für die Disposition", "priceFrom": 1000, "priceTo": 1500 },
+      { "title": "Checklisten", "description": "Abfahrtskontrolle und Reinigung als digitale Checkliste", "priceFrom": 600, "priceTo": 1000 },
+      { "title": "Weitere Sprache", "description": "Fahrer-App in einer zusätzlichen Sprache", "priceFrom": 500, "priceTo": 900 }
+    ],
+    "assumptions": [
+      { "label": "", "text": "Ein fester Ansprechpartner bei KARAMAN steht für Rückfragen innerhalb von zwei Werktagen zur Verfügung" },
+      { "label": "", "text": "Stammdaten werden als Excel-Datei in einem vereinbarten Format bereitgestellt" },
+      { "label": "", "text": "Die Fahrer nutzen Smartphones mit aktuellem Android oder iOS und mobiler Datenverbindung" }
+    ],
+    "exclusions": [
+      { "label": "", "text": "Hardware, Mobilfunkverträge und Lizenzen Dritter" },
+      { "label": "", "text": "Rechnungsstellung und Buchhaltung" },
+      { "label": "", "text": "Ausbaustufen, sofern nicht gesondert beauftragt" }
+    ],
+    "risks": [
+      { "label": "Regelwerk", "text": "Sonderfälle bei der Abrechnung (Wartezeiten, Mindermengen) sind noch nicht vollständig bekannt und können den Umfang erhöhen." },
+      { "label": "Akzeptanz", "text": "Die Fahrer-App muss im Alltag sehr einfach bedienbar sein, sonst werden Status nicht zuverlässig gemeldet." },
+      { "label": "Datenqualität", "text": "Unvollständige Stammdaten verzögern den Pilotbetrieb." }
+    ],
+    "openQuestions": [
+      { "label": "", "text": "Welche Abrechnungsarten (Stunde, Tour, Menge) müssen im MVP abgebildet werden?" },
+      { "label": "", "text": "Wie viele Fahrzeuge und Fahrer sind zum Go-Live aktiv?" },
+      { "label": "", "text": "In welchem Format erwarten die Auftraggeber den Leistungsnachweis?" },
+      { "label": "", "text": "Gibt es Vorgaben zur Datenhaltung durch Auftraggeber oder Werke?" }
+    ],
+    "timeline": [
+      { "phase": "Analyse & Regelwerk", "period": "KW 47–48", "result": "Abgenommenes Regelwerk und Klickprototyp" },
+      { "phase": "Umsetzung", "period": "KW 49–3", "result": "Disposition, Fahrer-App und Export einsatzbereit" },
+      { "phase": "Pilotbetrieb", "period": "KW 4–5", "result": "Pilot mit 3–4 Fahrzeugen, Nachbesserungen" },
+      { "phase": "Go-Live", "period": "KW 6", "result": "Rollout auf alle Fahrzeuge" }
+    ],
+    "nextSteps": [
+      { "label": "", "text": "Rückmeldung zur Ersteinschätzung und Klärung der offenen Fragen" },
+      { "label": "", "text": "Workshop zum Regelwerk mit Beispieltagen" },
+      { "label": "", "text": "Verbindliches Angebot zum Festpreis" },
+      { "label": "", "text": "Beauftragung und Projektstart" }
+    ]
+  }
+}

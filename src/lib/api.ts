@@ -1,5 +1,8 @@
 import type {
   CustomerDetail,
+  EstimateDetail,
+  EstimateListItem,
+  SaveEstimateRequest,
   DuplicateCheckResult,
   CustomerListItem,
   CustomerNote,
@@ -629,5 +632,20 @@ deleteServiceItem: (id: string) =>
     const res = await fetch(`${API}/api/contract-approval/${token}/pdf`);
     if (!res.ok) throw new Error(await res.text());
     return res.blob();
+  },  // Schätzungen (Aufwandsschätzungen)
+  estimates: (params = "") => apiFetch<PagedResult<EstimateListItem>>(`/estimates?${params}`),
+  estimate: (id: string) => apiFetch<EstimateDetail>(`/estimates/${id}`),
+  createEstimate: (data: SaveEstimateRequest) => apiFetch<EstimateDetail>("/estimates", { method: "POST", body: JSON.stringify(data) }),
+  updateEstimate: (id: string, data: SaveEstimateRequest) => apiFetch<EstimateDetail>(`/estimates/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+  duplicateEstimate: (id: string) => apiFetch<EstimateDetail>(`/estimates/${id}/duplicate`, { method: "POST" }),
+  deleteEstimate: (id: string) => apiFetch<void>(`/estimates/${id}`, { method: "DELETE" }),
+  estimatePdfBlob: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+    const res = await fetch(`${API}/api/estimates/${id}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error(await res.text());
+    const cd = res.headers.get("Content-Disposition") || "";
+    const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(cd);
+    return { blob: await res.blob(), fileName: m ? decodeURIComponent(m[1]) : `Aufwandsschaetzung_${id}.pdf` };
   },
 };
