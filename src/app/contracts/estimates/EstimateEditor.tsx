@@ -422,7 +422,7 @@ export default function EstimateEditor({ id }: { id?: string }) {
         </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <Field label="Bezeichnung Festpreis"><input value={form.fixedPriceLabel ?? ""} onChange={(e) => update({ fixedPriceLabel: e.target.value })} placeholder="Zielpreis/Festpreis" className={inputCls} /></Field>
-          <Field label="Festpreis netto (€, optional)">
+          <Field label={smallBusiness ? "Festpreis (€, optional)" : "Festpreis netto (€, optional)"}>
             <input type="number" min={0} step={100} value={form.fixedPrice ?? ""} onChange={(e) => update({ fixedPrice: parseNum(e.target.value) })} className={`${inputCls} text-right`} />
           </Field>
           <div className="text-sm self-end pb-2 text-muted">
