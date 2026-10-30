@@ -671,4 +671,5 @@ export interface EstimateDetail extends SaveEstimateRequest {
   extensionsTo: number;
   createdAt: string;
   updatedAt?: string | null;
+  quoteId?: Id | null;
 }

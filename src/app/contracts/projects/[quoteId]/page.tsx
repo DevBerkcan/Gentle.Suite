@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { AlertTriangle, ArrowLeft, Check, ChevronDown, Circle, ExternalLink, Minus, Send } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -46,6 +46,7 @@ function ManualItem({ sub, onSave }: { sub: any; onSave: (state: string, note: s
 
 export default function LegalWorkflowDetailPage() {
   const { quoteId } = useParams() as { quoteId: string };
+  const router = useRouter();
   const [wf, setWf] = useState<any>(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
@@ -93,6 +94,19 @@ export default function LegalWorkflowDetailPage() {
     if (step.key === "contract") return wf.agencyContractId
       ? <Link href={`/contracts/${wf.agencyContractId}`} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">Vertrag {wf.agencyContractNumber} öffnen<ExternalLink className="h-3.5 w-3.5" /></Link>
       : <Link href={`/contracts/new?quoteId=${wf.quoteId}`} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover">Agenturvertrag aus Angebot erstellen</Link>;
+    if (step.key === "av") return wf.avContractId
+      ? <Link href={`/contracts/${wf.avContractId}`} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">AV-Vertrag öffnen<ExternalLink className="h-3.5 w-3.5" /></Link>
+      : (
+        <button disabled={!!busy} onClick={() => run("av", async () => {
+          const tpl = (await api.contractTemplates()).find((t: any) => t.key === "av-vertrag" && t.isActive);
+          if (!tpl) throw new Error("Vorlage „AV-Vertrag“ fehlt unter Vertragsvorlagen.");
+          const c = await api.createAgencyContract({ quoteId: wf.quoteId, contractTemplateId: tpl.id });
+          router.push(`/contracts/${c.id}`);
+          return wf;
+        })} className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-sm text-white hover:bg-primary-hover disabled:opacity-50">
+          AV-Vertrag aus Vorlage erstellen
+        </button>
+      );
     if (step.key === "rights") return wf.rightsGrantedAt ? (
       <p className="text-sm text-muted">Bestätigt am {fmt(wf.rightsGrantedAt)} von {wf.rightsGrantedByName} · Referenz-Nutzung: {wf.rightsReferenceConsent ? "erlaubt" : "nicht erlaubt"}</p>
     ) : (

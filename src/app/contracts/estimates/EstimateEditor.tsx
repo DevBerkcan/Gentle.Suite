@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowDown, ArrowUp, ChevronDown, Copy, FileDown, Plus, Save, Sparkles, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronDown, Copy, FileDown, FileText, Plus, Save, Sparkles, Trash2 } from "lucide-react";
 import { api } from "@/lib/api";
 import type {
   CustomerListItem,
@@ -22,11 +22,19 @@ import {
   emptyTimelineRow,
   formatEur,
   formatRange,
-  karamanEstimate,
   sumRange,
   toForm,
   toPayload,
 } from "./estimateDefaults";
+import { ESTIMATE_PRESETS } from "./estimatePresets";
+
+type PriceMode = "fixed" | "upper" | "middle" | "lower";
+const PRICE_MODES: { value: PriceMode; label: string; hint: string }[] = [
+  { value: "fixed", label: "Festpreis", hint: "Zielpreis/Festpreis anteilig auf die Module verteilt" },
+  { value: "upper", label: "Obere Spanne", hint: "Je Modul der Bis-Preis" },
+  { value: "middle", label: "Mitte", hint: "Je Modul die Mitte der Spanne" },
+  { value: "lower", label: "Untere Spanne", hint: "Je Modul der Von-Preis" },
+];
 
 const inputCls = "w-full px-3 py-2 border border-border rounded-lg text-sm bg-surface";
 const labelCls = "block text-xs font-medium text-muted mb-1";
@@ -218,7 +226,9 @@ export default function EstimateEditor({ id }: { id?: string }) {
   const [form, setForm] = useState<SaveEstimateRequest | null>(isNew ? defaultEstimate() : null);
   const [customers, setCustomers] = useState<CustomerListItem[]>([]);
   const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState<"" | "save" | "pdf" | "duplicate" | "delete">("");
+  const [busy, setBusy] = useState<"" | "save" | "pdf" | "duplicate" | "delete" | "quote">("");
+  const [quoteDialog, setQuoteDialog] = useState(false);
+  const [priceMode, setPriceMode] = useState<PriceMode>("fixed");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   // Kleinunternehmer (§ 19 UStG) show the fixed price as end price — same rule as the PDF
@@ -332,12 +342,44 @@ export default function EstimateEditor({ id }: { id?: string }) {
     }
   }
 
-  function loadExample() {
-    if (dirty && !confirm("Das Formular mit dem KARAMAN-Beispiel überschreiben?")) return;
-    const ex = karamanEstimate();
+  function loadPreset(key: string) {
+    const p = ESTIMATE_PRESETS.find((x) => x.key === key);
+    if (!p) return;
+    if (dirty && !confirm(`Das Formular mit der Vorlage „${p.label}“ überschreiben?`)) return;
+    const ex = p.build();
+    // Keep a customer that was already picked; the example matches its customer by name.
     const match = customers.find((c) => c.companyName.trim().toLowerCase() === (ex.customerDisplayName ?? "").trim().toLowerCase());
-    setForm(match ? { ...ex, customerId: match.id, customerDisplayName: "" } : ex);
+    const customerId = form!.customerId || match?.id || null;
+    setForm({ ...ex, customerId, customerDisplayName: customerId ? "" : ex.customerDisplayName });
     setDirty(true);
+  }
+
+  /** Quote total per price basis — mirrors EstimateServiceImpl.PriceModules on the API. */
+  function quoteTotal(mode: PriceMode): number | null {
+    const rows = form!.content.modules.filter((m) => m.title?.trim());
+    const lo = (m: EstimateModule) => Number(m.priceFrom ?? m.priceTo ?? 0);
+    const hi = (m: EstimateModule) => Number(m.priceTo ?? m.priceFrom ?? 0);
+    if (mode === "fixed") return form!.fixedPrice ?? null;
+    if (mode === "upper") return rows.reduce((s, m) => s + hi(m), 0);
+    if (mode === "lower") return rows.reduce((s, m) => s + lo(m), 0);
+    return rows.reduce((s, m) => s + Math.round((lo(m) + hi(m)) / 2), 0);
+  }
+
+  async function onCreateQuote() {
+    setBusy("quote");
+    setError("");
+    try {
+      const current = dirty || !estimate ? await save() : estimate;
+      if (!current) return;
+      const quote = await api.createQuoteFromEstimate(current.id, { priceMode });
+      setDirty(false);
+      router.push(`/quotes/${quote.id}`);
+    } catch (e: any) {
+      setError(e?.message || "Angebot konnte nicht erstellt werden");
+      setQuoteDialog(false);
+    } finally {
+      setBusy("");
+    }
   }
 
   const c = form.content;
@@ -359,7 +401,18 @@ export default function EstimateEditor({ id }: { id?: string }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className={`text-xs px-2 py-1 rounded-full ${st.cls}`}>{st.label}</span>
-          {isNew && <button type="button" onClick={loadExample} className={btn}><Sparkles size={14} /> KARAMAN-Beispiel laden</button>}
+          {isNew && (
+            <label className={`${btn} cursor-pointer`}>
+              <Sparkles size={14} />
+              <select value="" onChange={(e) => loadPreset(e.target.value)} className="bg-transparent outline-none cursor-pointer">
+                <option value="">Vorlage laden …</option>
+                {ESTIMATE_PRESETS.map((p) => <option key={p.key} value={p.key}>{p.label} – {p.hint}</option>)}
+              </select>
+            </label>
+          )}
+          {estimate?.quoteId
+            ? <a href={`/quotes/${estimate.quoteId}`} className={btn}><FileText size={14} /> Zum Angebot</a>
+            : <button type="button" onClick={() => { setPriceMode(form.fixedPrice ? "fixed" : "upper"); setQuoteDialog(true); }} disabled={!!busy} className={btn}><FileText size={14} /> Angebot erstellen</button>}
           {!isNew && <button type="button" onClick={onDuplicate} disabled={!!busy} className={btn}><Copy size={14} /> {busy === "duplicate" ? "Wird dupliziert..." : "Duplizieren / neue Version"}</button>}
           <button type="button" onClick={onPdf} disabled={!!busy} className={btn}><FileDown size={14} /> {busy === "pdf" ? "PDF wird erstellt..." : "PDF herunterladen"}</button>
           <button type="button" onClick={onSave} disabled={!!busy} className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover disabled:opacity-50">
@@ -369,6 +422,35 @@ export default function EstimateEditor({ id }: { id?: string }) {
       </div>
 
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">×</button></div>}
+
+      {quoteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setQuoteDialog(false)}>
+          <div className="bg-surface rounded-xl p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-1">Angebot aus Schätzung</h2>
+            <p className="text-sm text-muted mb-4">Jedes Modul wird eine Angebotsposition. „Nicht enthalten“, Annahmen und optionale Ausbaustufen kommen in den Schlusstext des Angebots. Danach kannst du alles im Angebot anpassen.</p>
+            {!form.customerId && <p className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">Bitte zuerst oben einen Kunden auswählen.</p>}
+            <fieldset className="space-y-2">
+              <legend className="text-sm font-medium mb-1">Preisbasis</legend>
+              {PRICE_MODES.map((m) => {
+                const total = quoteTotal(m.value);
+                const disabled = m.value === "fixed" && !form.fixedPrice;
+                return (
+                  <label key={m.value} className={`flex items-center gap-3 rounded-lg border px-3 py-2 ${priceMode === m.value ? "border-primary bg-primary/5" : "border-border"} ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+                    <input type="radio" name="priceMode" checked={priceMode === m.value} disabled={disabled} onChange={() => setPriceMode(m.value)} />
+                    <span className="flex-1"><span className="block text-sm font-medium">{m.label}</span><span className="block text-xs text-muted">{disabled ? "Kein Zielpreis/Festpreis eingetragen" : m.hint}</span></span>
+                    <span className="text-sm font-semibold">{total != null ? formatEur(total) : "–"}</span>
+                  </label>
+                );
+              })}
+            </fieldset>
+            <p className="mt-2 text-xs text-muted">Beträge netto{smallBusiness ? " (Kleinunternehmer, keine USt.)" : ", zzgl. USt."}.</p>
+            <div className="flex gap-2 mt-5">
+              <button type="button" onClick={onCreateQuote} disabled={busy === "quote" || !form.customerId} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50">{busy === "quote" ? "Wird erstellt..." : "Angebot erstellen"}</button>
+              <button type="button" onClick={() => setQuoteDialog(false)} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button>
+            </div>
+          </div>
+        </div>
+      )}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 
       <Card title="Kopfdaten" hint="Deckblatt und Metadaten der Schätzung">
