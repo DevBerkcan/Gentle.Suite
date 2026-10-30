@@ -426,6 +426,12 @@ export interface CustomerSubscription {
   invoicesPaid?: number;
   invoicesTotal?: number;
   outstandingAmount?: number;
+  /** Letzter Einrichtungsversuch des Kunden über /payment/setup/{token}. */
+  lastSetupAttemptAt?: string | null;
+  lastSetupAttemptMethod?: "iban" | "card" | string | null;
+  /** Fehler des letzten Versuchs (deutscher Kundentext, ggf. "| Mollie: …"); null = ok bzw. Mandat inzwischen gültig. */
+  lastSetupError?: string | null;
+  setupAttemptCount?: number | null;
 }
 
 export type MandateMethod = "directdebit" | "creditcard" | "paypal";
@@ -448,6 +454,14 @@ export interface SubscriptionInvoice {
   paidAt?: string | null;
   chargedBack: boolean;
   lastFailureReason?: string | null;
+}
+
+/** POST /api/invoices/{id}/collection-date (Admin) */
+export interface RescheduleCollectionRequest {
+  /** YYYY-MM-DD (Europe/Berlin), morgen bis heute + 90 Tage. */
+  date: string;
+  reason?: string | null;
+  notifyCustomer: boolean;
 }
 
 /** GET /api/public/mandate-setup/{token} (öffentlich) */

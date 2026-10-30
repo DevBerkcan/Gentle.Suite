@@ -31,6 +31,7 @@ import type {
   MandateReconcileSummary,
   PaymentMonitoring,
   SubscriptionInvoice,
+  RescheduleCollectionRequest,
 } from "@/types/api";
 import type { DashboardOverview } from "@/types/dashboard";
 import {
@@ -462,6 +463,7 @@ deleteServiceItem: (id: string) =>
   billingCalendar: (days = 90) => apiFetch<any>(`/subscriptions/billing-calendar?days=${days}`),
   // Mollie-Überarbeitung (docs/mollie-api-contract.md)
   subscriptionInvoiceList: (id: string) => apiFetch<SubscriptionInvoice[]>(`/subscriptions/${id}/invoices`).then((list) => Array.isArray(list) ? list : []),
+  rescheduleCollection: (invoiceId: string, data: RescheduleCollectionRequest) => apiFetch<SubscriptionInvoice>(`/invoices/${invoiceId}/collection-date`, { method: "POST", body: JSON.stringify(data) }),
   checkSubscriptionMandate: (id: string) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/mandate/check`, { method: "POST" }).then(normalizeSubscription),
   paymentMonitoring: (signal?: AbortSignal) => apiFetch<PaymentMonitoring>("/monitoring/payments", { signal, cache: "no-store" }),
   reconcileMandates: () => apiFetch<MandateReconcileSummary>("/monitoring/reconcile-mandates", { method: "POST" }),

@@ -36,6 +36,7 @@ const KIND_LABELS: Record<string, string> = {
   chargeback: "Rücklastschrift",
   "mandate-missing": "Mandat fehlt",
   "mandate-email-failed": "Mandats-E-Mail fehlgeschlagen",
+  "mandate-setup-failed": "Einrichtung fehlgeschlagen",
   "authorization-missing": "Freigabe fehlt",
   "webhook-errors": "Webhook-Fehler",
   "mail-delivery-failed": "Mailversand",

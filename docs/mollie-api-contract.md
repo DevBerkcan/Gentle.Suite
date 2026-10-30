@@ -49,9 +49,32 @@ Neu in `GET /api/subscriptions`, `/subscriptions/customer/{id}`:
   "mandateMethod": "directdebit",                       // directdebit | creditcard | paypal | null
   "mandateAccountLast4": "3000",                        // IBAN- bzw. Kartenendziffern, null wenn unbekannt
   "mandateSetupUrl": "https://gentlesuite.vercel.app/payment/setup/abc…", // zum Kopieren für den Admin
-  "invoicesPaid": 1, "invoicesTotal": 2, "paidAmount": 0.01, "outstandingAmount": 0.01
+  "invoicesPaid": 1, "invoicesTotal": 2, "paidAmount": 0.01, "outstandingAmount": 0.01,
+  "lastSetupAttemptAt": "2026-10-30T14:12:05+00:00",   // letzter Einrichtungsversuch des Kunden über /payment/setup/{token}, null = nie
+  "lastSetupAttemptMethod": "iban",                     // iban | card | null
+  "lastSetupError": "Die IBAN ist ungültig. Bitte prüfen Sie Ihre Eingabe.", // null = letzter Versuch ok bzw. Mandat inzwischen gültig
+  "setupAttemptCount": 2                                // Anzahl fehlgeschlagener Versuche, null = noch keiner
 }
 ```
+
+`lastSetupError` enthält den deutschen Kundentext, bei Ablehnung durch Mollie zusätzlich ` | Mollie: HTTP 422: …`
+(Mollie-Detail, IBANs maskiert wie `DE89********3000`). Es wird nie eine vollständige IBAN gespeichert.
+Gezählt wird: IBAN-POST mit Validierungsfehler (IBAN ungültig, Bestätigung/Name fehlt) oder Mollie-Ablehnung,
+fehlgeschlagene Erzeugung des Karten-Checkouts und eine Karten-Erstzahlung, die per Webhook/Statusabfrage mit
+`failed`/`expired`/`canceled` endet (Text z. B. „Kartenzahlung abgebrochen oder abgelaufen | Mollie: Status 'expired'“,
+plus `details.failureReason`/`failureMessage`, falls vorhanden). Sobald ein Mandat gültig wird, wird `lastSetupError`
+gelöscht; `lastSetupAttemptAt` bleibt erhalten.
+
+`POST /api/invoices/{id}/collection-date` (Admin) – geplanten Einzug verschieben:
+```json
+{ "date": "2026-11-16", "reason": "Rechnung erst am 30.10. erhalten", "notifyCustomer": false }
+```
+Nur wenn die Rechnung zu einem Abo gehört, `paymentCollectionStatus = "scheduled"`, nicht bezahlt/storniert und noch keine
+Mollie-Zahlung läuft. `date` muss zwischen morgen und heute + 90 Tagen liegen (Europe/Berlin). Setzt
+`paymentCollectionDueDate` auf Berliner Mitternacht des Datums und `dueDate` mit, falls dieses früher lag. Antwort: die
+aktualisierte Zeile wie in `GET /api/subscriptions/{id}/invoices`. 400 `{ "error": "…" }` bei Verstoß, 403 für Nicht-Admins.
+`notifyCustomer: true` schickt eine kurze Mail an den Hauptkontakt („Neuer Einzugstermin für Rechnung …“); Standard ist
+`false`, es wird nie automatisch informiert. Jede Verschiebung landet im Aktivitätsprotokoll des Kunden.
 
 `GET /api/subscriptions/{id}/invoices` – Liste je Rechnung:
 ```json
@@ -78,7 +101,9 @@ Neu in `GET /api/subscriptions`, `/subscriptions/customer/{id}`:
 ```
 `kind`-Werte: `billing-job-stale`, `billing-job-failed`, `collection-overdue` (scheduled, Fälligkeit vorbei),
 `collection-stuck` (open/pending > 5 Werktage), `collection-failed`, `chargeback`, `mandate-missing` (> 3 Tage),
-`mandate-email-failed`, `authorization-missing`, `webhook-errors`.
+`mandate-email-failed`, `mandate-setup-failed` (letzter Einrichtungsversuch des Kunden in den letzten 14 Tagen
+fehlgeschlagen, Mandat weiterhin nicht gültig; Titel „Einrichtung fehlgeschlagen: <Plan>“, Detail = Fehler),
+`authorization-missing`, `webhook-errors`, `mail-delivery-failed`.
 
 ### `POST /api/monitoring/reconcile-mandates` (Admin)
 Startet den Mandats-Abgleich sofort, Antwort wie `lastMandateReconcile`.
