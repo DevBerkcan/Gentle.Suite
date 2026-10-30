@@ -6,6 +6,7 @@ import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHist
 import ManualInstallmentModal from "./ManualInstallmentModal";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
 import InfoPopover from "@/app/components/InfoPopover";
+import { ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, useIsAdmin } from "@/app/components/SubscriptionCollection";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -33,12 +34,18 @@ export default function InstallmentsPage() {
   const [authorizingId, setAuthorizingId] = useState<string | null>(null);
   const [showManualModal, setShowManualModal] = useState(false);
   const [showBillingCalendar, setShowBillingCalendar] = useState(false);
+  const isAdmin = useIsAdmin();
 
   function loadSubs() {
     api.allSubs().then(setSubs).catch(() => setError("Ratenzahlungen konnten nicht geladen werden"));
   }
 
-  useEffect(() => { loadSubs(); }, []);
+  useEffect(() => {
+    loadSubs();
+    // Deep-Link aus dem Monitoring: /installments?sub={id} klappt die Zeile auf
+    const linked = new URLSearchParams(window.location.search).get("sub");
+    if (linked) setExpandedId(linked);
+  }, []);
 
   const plans = subs.filter(s => s.isInstallmentPlan);
   const activePlans = plans.filter(s => s.status === "Active");
@@ -55,9 +62,11 @@ export default function InstallmentsPage() {
   }).length;
   const mandateIssuesCount = plans.filter(s => s.billingStage === "mandate").length;
   const totalIncome = plans.reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
+  // Real debit date (pending invoice or forecast) — nextBillingDate already points one cycle ahead once an invoice exists.
+  const chargeDate = (s: any): string | null => s.nextCollectionDate ?? (s.nextCollectionBlockedReason ? null : s.nextBillingDate ?? null);
   const nextChargeSub = activePlans
-    .filter(s => s.nextBillingDate)
-    .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime())[0];
+    .filter(s => chargeDate(s))
+    .sort((a, b) => new Date(chargeDate(a)!).getTime() - new Date(chargeDate(b)!).getTime())[0];
 
   const filteredPlans = statusFilter === "Alle" ? plans : plans.filter(s => s.status === statusFilter);
 
@@ -101,6 +110,12 @@ export default function InstallmentsPage() {
     } finally {
       setAuthorizingId(null);
     }
+  }
+
+  function replaceSub(updated: any) {
+    setSubs(list => list.map(x => (x.id === updated.id ? { ...x, ...updated } : x)));
+    setSuccess("Mandat mit Mollie abgeglichen");
+    setTimeout(() => setSuccess(""), 4000);
   }
 
   function handleExpand(id: string) {
@@ -187,7 +202,7 @@ export default function InstallmentsPage() {
         >
           <p className="text-xs text-muted mb-1">Nächste Abbuchung</p>
           <p className="text-2xl font-bold">
-            {nextChargeSub ? new Date(nextChargeSub.nextBillingDate).toLocaleDateString("de") : "–"}
+            {nextChargeSub ? new Date(chargeDate(nextChargeSub)!).toLocaleDateString("de") : "–"}
           </p>
           <p className="text-xs text-primary mt-0.5">Kalender ansehen →</p>
         </button>
@@ -213,14 +228,15 @@ export default function InstallmentsPage() {
         </div>
       </div>
 
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <table className="w-full">
+      <div className="bg-surface rounded-xl border border-border overflow-x-auto">
+        <table className="w-full min-w-[1320px]">
           <thead>
             <tr className="border-b border-border bg-background">
               <th className="px-4 py-3 text-left text-xs text-muted">Kunde</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Produkt</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Rechnungsstellung</th>
+              <th className="px-4 py-3 text-left text-xs text-muted">Mandat</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Mandats-E-Mail</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Raten</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Bezahlt</th>
@@ -233,7 +249,12 @@ export default function InstallmentsPage() {
             {filteredPlans.map((sub: any) => (
               <Fragment key={sub.id}>
                 <tr className="border-b border-border hover:bg-background">
-                  <td className="px-4 py-3 font-medium">{sub.customerName || "–"}</td>
+                  <td className="px-4 py-3 font-medium">
+                    <div className="flex items-center gap-2">
+                      <ExpandChevron expanded={expandedId === sub.id} onClick={() => handleExpand(sub.id)} label={sub.customerName || "Ratenzahlung"} />
+                      <span>{sub.customerName || "–"}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">
                     <div>{sub.installmentSourceTitle || sub.planName}</div>
                     <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "–"}</div>
@@ -247,8 +268,10 @@ export default function InstallmentsPage() {
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
                   </td>
                   <td className="px-4 py-3 text-xs">
-                    {sub.billingAuthorizedAt ? (
+                    {sub.billingAuthorizedAt && (Number(sub.installmentsCompleted || 0) > 0 || !!sub.nextCollectionInvoiceNumber || Number(sub.invoicesPaid || 0) > 0) ? (
                       <div><span className="font-medium text-success">Rechnung gesendet</span><div className="mt-1 text-muted">seit {new Date(sub.billingAuthorizedAt).toLocaleDateString("de")}</div></div>
+                    ) : sub.billingAuthorizedAt ? (
+                      <div><span className="font-medium text-text">Freigegeben</span><div className="mt-1 text-muted">Noch keine Rechnung erstellt</div></div>
                     ) : sub.mollieMandateStatus === "valid" ? (
                       <button disabled={authorizingId === sub.id} onClick={() => handleBillNow(sub.id)} className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover disabled:opacity-50">
                         {authorizingId === sub.id ? "Wird versendet..." : "Rechnung jetzt senden"}
@@ -256,6 +279,9 @@ export default function InstallmentsPage() {
                     ) : (
                       <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700">Wartet auf SEPA-Mandat</span>
                     )}
+                  </td>
+                  <td className="px-4 py-3">
+                    <MandateInfo sub={sub} isAdmin={isAdmin} onUpdated={replaceSub} onError={setError} />
                   </td>
                   <td className="px-4 py-3 text-xs">
                     {sub.mandateEmailStatus === "Sent" ? (
@@ -289,8 +315,8 @@ export default function InstallmentsPage() {
                       );
                     })()}
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted">
-                    {sub.status === "Active" ? new Date(sub.nextBillingDate).toLocaleDateString("de") : "–"}
+                  <td className="px-4 py-3">
+                    <NextCollection sub={sub} fallbackDate={sub.status === "Active" ? sub.nextBillingDate : null} />
                   </td>
                   <td className="px-4 py-3 text-right font-medium">{Number(sub.totalInstallmentAmount || 0).toFixed(2)} €</td>
                   <td className="px-4 py-3">
@@ -309,16 +335,18 @@ export default function InstallmentsPage() {
                       {(sub.status === "Active" || sub.status === "Paused" || sub.status === "PendingConfirmation") && (
                         <button onClick={() => handleStatus(sub.id, "Cancelled")} className="text-xs text-danger hover:underline">Abbrechen</button>
                       )}
-                      <button onClick={() => handleExpand(sub.id)} className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 px-1.5 py-0.5 rounded">
-                        {expandedId === sub.id ? "▲" : "▼ Details"}
+                      <button onClick={() => handleExpand(sub.id)} className="text-xs text-muted hover:text-text border border-border px-2 py-0.5 rounded-full">
+                        {expandedId === sub.id ? "Schließen" : "Details"}
                       </button>
                     </div>
                   </td>
                 </tr>
                 {expandedId === sub.id && (
                   <tr>
-                    <td colSpan={10} className="bg-gray-50 px-6 py-4">
+                    <td colSpan={11} className="bg-background px-6 py-4 space-y-4">
+                      <SubscriptionInvoicesTable sub={sub} />
                       <SubscriptionPaymentHistory
+                        showInvoiceTable={false}
                         subscriptionId={sub.id}
                         isInstallmentPlan
                         installmentsCompleted={sub.installmentsCompleted}

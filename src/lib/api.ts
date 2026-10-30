@@ -25,6 +25,12 @@ import type {
   QuoteTemplate,
   ServiceCategory,
   TeamMember,
+  UserAccount,
+  MandateSetupInfo,
+  MandateSetupIbanRequest,
+  MandateReconcileSummary,
+  PaymentMonitoring,
+  SubscriptionInvoice,
 } from "@/types/api";
 import type { DashboardOverview } from "@/types/dashboard";
 import {
@@ -64,6 +70,37 @@ export async function apiFetch<T>(path: string, opts?: RequestInit): Promise<T> 
     throw new Error(message);
   }
   if (res.status === 204) return {} as T;
+  return res.json();
+}
+
+/** Fehler mit HTTP-Status (z. B. 404 für unbekannte Links auf öffentlichen Seiten). */
+export class ApiError extends Error {
+  constructor(message: string, public status: number) { super(message); this.name = "ApiError"; }
+}
+
+/** Öffentliche Endpunkte (ohne Login): kein Token, keine Weiterleitung auf /login, Status bleibt erhalten. */
+async function publicFetch<T>(path: string, opts?: RequestInit): Promise<T> {
+  const res = await fetch(`${API}/api${path}`, { ...opts, cache: "no-store", headers: { "Content-Type": "application/json", ...opts?.headers } });
+  if (!res.ok) {
+    const raw = await res.text();
+    let message = raw;
+    try { const p = JSON.parse(raw); message = p?.error || p?.message || p?.title || raw; } catch { /* raw */ }
+    throw new ApiError(message || `HTTP ${res.status}`, res.status);
+  }
+  if (res.status === 204) return {} as T;
+  return res.json();
+}
+
+async function uploadAvatarTo(path: string, file: File): Promise<UserAccount> {
+  const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+  const fd = new FormData(); fd.append("file", file);
+  const res = await fetch(`${API}/api${path}`, { method: "POST", headers: token ? { Authorization: `Bearer ${token}` } : {}, body: fd });
+  if (!res.ok) {
+    const raw = await res.text();
+    let msg = raw;
+    try { const p = JSON.parse(raw); msg = p?.error || p?.message || p?.title || raw; } catch { /* raw */ }
+    throw new Error(msg || `HTTP ${res.status}`);
+  }
   return res.json();
 }
 
@@ -423,6 +460,15 @@ deleteServiceItem: (id: string) =>
   billSubscriptionNow: (id: string) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/bill-now`, { method: "POST" }).then(normalizeSubscription),
   createManualInstallmentPlan: (data: any) => apiFetch<CustomerSubscription>("/subscriptions/manual-installment-plan", { method: "POST", body: JSON.stringify(data) }).then(normalizeSubscription),
   billingCalendar: (days = 90) => apiFetch<any>(`/subscriptions/billing-calendar?days=${days}`),
+  // Mollie-Überarbeitung (docs/mollie-api-contract.md)
+  subscriptionInvoiceList: (id: string) => apiFetch<SubscriptionInvoice[]>(`/subscriptions/${id}/invoices`).then((list) => Array.isArray(list) ? list : []),
+  checkSubscriptionMandate: (id: string) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/mandate/check`, { method: "POST" }).then(normalizeSubscription),
+  paymentMonitoring: (signal?: AbortSignal) => apiFetch<PaymentMonitoring>("/monitoring/payments", { signal, cache: "no-store" }),
+  reconcileMandates: () => apiFetch<MandateReconcileSummary>("/monitoring/reconcile-mandates", { method: "POST" }),
+  // Mandats-Einrichtung (öffentlich, Token-Link)
+  mandateSetup: (token: string) => publicFetch<MandateSetupInfo>(`/public/mandate-setup/${encodeURIComponent(token)}`),
+  mandateSetupIban: (token: string, data: MandateSetupIbanRequest) => publicFetch<{ status: string }>(`/public/mandate-setup/${encodeURIComponent(token)}/iban`, { method: "POST", body: JSON.stringify(data) }),
+  mandateSetupCheckout: (token: string) => publicFetch<{ checkoutUrl: string }>(`/public/mandate-setup/${encodeURIComponent(token)}/checkout`, { method: "POST" }),
   triggerBankSync: () => apiFetch<void>("/system/trigger-bank-sync", { method: "POST" }),
   // Integrations (PayPal + GoCardless / Fyrst)
   integrationSettings: () => apiFetch<any>("/integrations"),
@@ -445,7 +491,8 @@ deleteServiceItem: (id: string) =>
   timeSummary: (from: string, to: string, projectId?: string) => apiFetch<any>(`/timetracking/summary?from=${from}&to=${to}${projectId ? `&projectId=${projectId}` : ""}`),
   createInvoiceFromTimeEntries: (data: any) => apiFetch<any>("/invoices/from-time-entries", { method: "POST", body: JSON.stringify(data) }),
   recentActivity: (limit = 10) => apiFetch<any[]>(`/activity/recent?limit=${limit}`),
-  exportInvoicesCsv: (status?: string) => `${API}/api/invoices/export.csv${status ? `?status=${status}` : ""}`,
+  /** query: fertiger Querystring ohne "?" (status, customerId, kind). */
+  exportInvoicesCsv: (query?: string) => `${API}/api/invoices/export.csv${query ? `?${query}` : ""}`,
   exportCustomersCsv: (status?: string) => `${API}/api/customers/export.csv${status ? `?status=${status}` : ""}`,
   bulkFinalizeInvoices: (ids: string[]) => Promise.all(ids.map(id => apiFetch<any>(`/invoices/${id}/finalize`, { method: "POST", body: JSON.stringify({ sendEmail: false }) }))),
   bulkSendInvoices: (ids: string[]) => Promise.all(ids.map(id => apiFetch<any>(`/invoices/${id}/send`, { method: "POST" }))),
@@ -477,6 +524,19 @@ deleteServiceItem: (id: string) =>
   updateUser: (id: string, data: any) => apiFetch<any>(`/users/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   deleteUser: (id: string) => apiFetch<any>(`/users/${id}`, { method: "DELETE" }),
   resetUserPassword: (id: string, data: any) => apiFetch<any>(`/users/${id}/reset-password`, { method: "POST", body: JSON.stringify(data) }),
+  // Profilbilder (jpg/png/webp, max. 2 MB)
+  profile: () => apiFetch<UserAccount>("/profile"),
+  uploadMyAvatar: (file: File) => uploadAvatarTo("/profile/avatar", file),
+  removeMyAvatar: () => apiFetch<UserAccount>("/profile/avatar", { method: "DELETE" }),
+  uploadUserAvatar: (id: string, file: File) => uploadAvatarTo(`/users/${encodeURIComponent(id)}/avatar`, file),
+  removeUserAvatar: (id: string) => apiFetch<UserAccount>(`/users/${encodeURIComponent(id)}/avatar`, { method: "DELETE" }),
+  /** Lädt ein Profilbild (avatarUrl aus UserAccount/Login, relativ zu /api) mit Token als Blob. */
+  avatarBlob: async (avatarUrl: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`${API}/api${avatarUrl}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return res.blob();
+  },
   // Email Log
   emailLogs: (params = "") => apiFetch<any>(`/emails?${params}`),
   // Legal Texts

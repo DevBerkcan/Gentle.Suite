@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { Sun, Moon, Plus, Receipt, FileText, Wallet, Ruler, ChevronDown, Settings, LogOut, Search, X, Menu } from "lucide-react";
 import { api } from "@/lib/api";
 import { workspaces, type Workspace } from "./workspaces";
+import UserAvatar from "./UserAvatar";
+import { getStoredUser, updateStoredUser, USER_UPDATED_EVENT, type StoredUser } from "@/lib/currentUser";
 
 const quickActions = [
   { label: "Rechnung erstellen", href: "/invoices", icon: Receipt },
@@ -22,7 +24,7 @@ interface Props {
 
 export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspace = "crm" }: Props) {
   const router = useRouter();
-  const [user, setUser] = useState<{ fullName?: string; email?: string } | null>(null);
+  const [user, setUser] = useState<StoredUser | null>(null);
   const [quickOpen, setQuickOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -35,8 +37,22 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const u = localStorage.getItem("user");
-    if (u) setUser(JSON.parse(u));
+    setUser(getStoredUser());
+    // Live-Update nach Profilbild-Upload (gleicher Tab: Custom Event, andere Tabs: storage-Event).
+    const onUpdated = () => setUser(getStoredUser());
+    const onStorage = (e: StorageEvent) => { if (e.key === "user") onUpdated(); };
+    window.addEventListener(USER_UPDATED_EVENT, onUpdated);
+    window.addEventListener("storage", onStorage);
+    // Sitzungen von vor dem Avatar-Feature haben weder userId noch avatarUrl im localStorage → einmal nachladen.
+    if (localStorage.getItem("token")) {
+      api.profile()
+        .then((p) => updateStoredUser({ userId: p.id, avatarUrl: p.avatarUrl ?? null, fullName: p.fullName || `${p.firstName} ${p.lastName}`.trim(), email: p.email }))
+        .catch(() => {});
+    }
+    return () => {
+      window.removeEventListener(USER_UPDATED_EVENT, onUpdated);
+      window.removeEventListener("storage", onStorage);
+    };
   }, []);
 
   // Cmd+K / Ctrl+K shortcut
@@ -80,10 +96,6 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
-
-  const initials = user?.fullName
-    ? user.fullName.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase()
-    : "?";
 
   function handleLogout() {
     localStorage.clear();
@@ -225,17 +237,18 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
             onClick={() => setUserOpen(o => !o)}
             className="flex items-center gap-2 px-2 py-1.5 rounded-full hover:bg-white/10 transition-colors"
           >
-            <span className="w-7 h-7 rounded-full bg-secondary text-navy text-xs font-bold flex items-center justify-center shrink-0">
-              {initials}
-            </span>
+            <UserAvatar avatarUrl={user?.avatarUrl} name={user?.fullName} sizeClass="w-7 h-7 text-xs" />
             <span className="text-sm font-medium max-w-32 truncate hidden sm:block">{user?.fullName ?? "—"}</span>
             <ChevronDown className="w-3 h-3 text-white/60 hidden sm:block" />
           </button>
           {userOpen && (
             <div className="absolute right-0 top-full mt-1 w-56 bg-surface text-text border border-border rounded-xl shadow-lg py-1 z-50">
-              <div className="px-4 py-2.5 border-b border-border">
-                <p className="text-sm font-medium">{user?.fullName}</p>
-                <p className="text-xs text-muted">{user?.email}</p>
+              <div className="px-4 py-2.5 border-b border-border flex items-center gap-3">
+                <UserAvatar avatarUrl={user?.avatarUrl} name={user?.fullName} sizeClass="w-10 h-10 text-sm" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{user?.fullName}</p>
+                  <p className="text-xs text-muted truncate">{user?.email}</p>
+                </div>
               </div>
               <Link
                 href="/settings"

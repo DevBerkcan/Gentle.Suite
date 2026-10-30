@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ChevronsLeft, ChevronsRight } from "lucide-react";
+import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { workspaces, type Workspace } from "./workspaces";
 
@@ -25,6 +25,9 @@ const navByWorkspace: Record<Workspace, { home: string; groups: NavGroup[] }> = 
         { href: "/invoices", label: "Rechnungen", icon: Receipt },
         { href: "/subscriptions", label: "Serienrechnungen", icon: RefreshCw },
         { href: "/installments", label: "Ratenzahlungen", icon: CalendarClock },
+      ] },
+      { title: "System", items: [
+        { href: "/monitoring", label: "Monitoring", icon: Activity },
       ] },
     ],
   },

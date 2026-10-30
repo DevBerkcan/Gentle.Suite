@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowUpRight, CheckCircle2, Clock3, RefreshCw, AlertCircle, Repeat2, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, CheckCircle2, Clock3, RefreshCw, AlertCircle, Repeat2, Wallet } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { api } from "@/lib/api";
 import type { BillingOverview, DashboardOverview } from "@/types/dashboard";
+import type { PaymentMonitoring } from "@/types/api";
 
 const money = (value: number) => new Intl.NumberFormat("de-DE", { style: "currency", currency: "EUR" }).format(value);
 const date = (value: string) => new Date(value).toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "Europe/Berlin" });
@@ -50,6 +51,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardOverview | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
+  const [monitoring, setMonitoring] = useState<PaymentMonitoring | null>(null);
   const request = useRef<AbortController | null>(null);
 
   const loadData = useCallback(async () => {
@@ -57,6 +59,8 @@ export default function DashboardPage() {
     const controller = new AbortController();
     request.current = controller;
     setRefreshing(true);
+    // Zahlungs-Monitoring nur als Hinweis-Banner, unabhängig vom Dashboard-Abruf; Fehler (z. B. Endpunkt noch nicht deployed) ignorieren
+    api.paymentMonitoring(controller.signal).then(setMonitoring).catch(() => {});
     try {
       const result = await api.dashboardOverview(controller.signal);
       if (!controller.signal.aborted) { setData(result); setError(""); }
@@ -86,6 +90,21 @@ export default function DashboardPage() {
         <button onClick={() => void loadData()} disabled={refreshing} aria-label="Dashboard aktualisieren" className="flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-2 text-sm disabled:opacity-50 hover:bg-background"><RefreshCw size={15} className={refreshing ? "animate-spin" : ""} aria-hidden="true" /><span className="hidden sm:inline">Aktualisieren</span></button>
       </div>
     </header>
+    {monitoring && (monitoring.counts.critical > 0 || monitoring.counts.warning > 0) && (
+      <Link href="/monitoring" className={`flex flex-wrap items-center gap-3 rounded-2xl border px-5 py-4 transition-colors ${monitoring.counts.critical > 0 ? "border-danger/30 bg-danger/5 hover:bg-danger/10" : "border-warning/30 bg-warning/5 hover:bg-warning/10"}`}>
+        <span className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${monitoring.counts.critical > 0 ? "bg-danger text-white" : "bg-warning text-white"}`}><Activity size={18} aria-hidden="true" /></span>
+        <div className="min-w-0 flex-1">
+          <p className={`text-[10px] font-semibold uppercase tracking-[0.2em] ${monitoring.counts.critical > 0 ? "text-danger" : "text-warning"}`}>Zahlungs-Monitoring</p>
+          <p className="mt-0.5 text-sm font-medium text-text">
+            {monitoring.counts.critical > 0 && <>{monitoring.counts.critical} {monitoring.counts.critical === 1 ? "kritisches Problem" : "kritische Probleme"}</>}
+            {monitoring.counts.critical > 0 && monitoring.counts.warning > 0 && " · "}
+            {monitoring.counts.warning > 0 && <>{monitoring.counts.warning} {monitoring.counts.warning === 1 ? "Warnung" : "Warnungen"}</>}
+            {(() => { const top = monitoring.issues.find(i => i.severity === "critical") || monitoring.issues.find(i => i.severity === "warning"); return top ? <span className="font-normal text-muted"> – {top.title}</span> : null; })()}
+          </p>
+        </div>
+        <span className="inline-flex items-center gap-1 rounded-full bg-navy px-4 py-1.5 text-xs font-semibold text-white">Ansehen<ArrowUpRight size={14} aria-hidden="true" /></span>
+      </Link>
+    )}
     {error && <div role="alert" className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm text-warning">{error}{data && <p className="mt-1">Die angezeigten Werte stammen vom letzten erfolgreichen Abruf ({date(data.generatedAt)}).</p>}</div>}
     {!data && !error && <div role="status" aria-label="Dashboard wird geladen" className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 animate-pulse">{[1, 2, 3, 4].map(i => <div key={i} className="h-36 bg-surface border border-border rounded-2xl" />)}<span className="sr-only">Dashboard wird geladen…</span></div>}
     {data && <>
