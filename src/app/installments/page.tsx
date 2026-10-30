@@ -6,7 +6,7 @@ import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHist
 import ManualInstallmentModal from "./ManualInstallmentModal";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
 import InfoPopover from "@/app/components/InfoPopover";
-import { ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, useIsAdmin } from "@/app/components/SubscriptionCollection";
+import { CollectionDaySetting, ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, useIsAdmin } from "@/app/components/SubscriptionCollection";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -112,9 +112,9 @@ export default function InstallmentsPage() {
     }
   }
 
-  function replaceSub(updated: any) {
+  function replaceSub(updated: any, message = "Mandat mit Mollie abgeglichen") {
     setSubs(list => list.map(x => (x.id === updated.id ? { ...x, ...updated } : x)));
-    setSuccess("Mandat mit Mollie abgeglichen");
+    setSuccess(message);
     setTimeout(() => setSuccess(""), 4000);
   }
 
@@ -344,6 +344,7 @@ export default function InstallmentsPage() {
                 {expandedId === sub.id && (
                   <tr>
                     <td colSpan={11} className="bg-background px-6 py-4 space-y-4">
+                      <CollectionDaySetting sub={sub} onUpdated={updated => replaceSub(updated, "Abbuchungstag gespeichert")} onError={setError} />
                       <SubscriptionInvoicesTable sub={sub} />
                       <SubscriptionPaymentHistory
                         showInvoiceTable={false}

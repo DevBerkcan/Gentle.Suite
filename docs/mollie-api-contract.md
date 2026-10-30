@@ -53,9 +53,32 @@ Neu in `GET /api/subscriptions`, `/subscriptions/customer/{id}`:
   "lastSetupAttemptAt": "2026-10-30T14:12:05+00:00",   // letzter Einrichtungsversuch des Kunden über /payment/setup/{token}, null = nie
   "lastSetupAttemptMethod": "iban",                     // iban | card | null
   "lastSetupError": "Die IBAN ist ungültig. Bitte prüfen Sie Ihre Eingabe.", // null = letzter Versuch ok bzw. Mandat inzwischen gültig
-  "setupAttemptCount": 2                                // Anzahl fehlgeschlagener Versuche, null = noch keiner
+  "setupAttemptCount": 2,                               // Anzahl fehlgeschlagener Versuche, null = noch keiner
+  "collectionDayOfMonth": 16                            // fester Abbuchungstag 1–28 (Ausnahme), null = Standard (Periodenbeginn)
 }
 ```
+
+`PUT /api/subscriptions/{id}/collection-day` (Admin) – fester Abbuchungstag je Abo bzw. Ratenplan:
+```json
+{ "day": 16 }      // 1–28
+{ "day": null }    // zurück auf Standard (Einzug zum Periodenbeginn)
+```
+Antwort: das aktualisierte Abo-DTO (inkl. `collectionDayOfMonth` und neu berechnetem `nextCollectionDate`).
+400 `{ "error": "Der Abbuchungstag muss zwischen 1 und 28 liegen." }` bei anderem Wert, 403 für Nicht-Admins, 404 für
+unbekannte Abos. Jede Änderung landet im Aktivitätsprotokoll des Kunden (`CollectionDayChanged`).
+
+Regel beim Erstellen der Rechnung für die Periode mit Beginn P (Abrechnungslauf und „Rechnung jetzt senden“):
+- ohne Tag: Basis = P (bisheriges Verhalten, unverändert);
+- mit Tag d: Basis = erster Kalendertag mit Tag d, der nicht vor P liegt (gleicher Monat, wenn P.Day ≤ d, sonst Folgemonat);
+- `paymentCollectionDueDate` = max(Basis, heute + Vorabankündigung) als Berliner Mitternacht.
+
+Leistungs- und Rechnungsperioden (Anker, `billingPeriodStart/End`) bleiben unverändert, nur der Einzugstermin verschiebt
+sich. **Gilt für alle künftigen Rechnungen; bereits erstellte Rechnungen behalten ihren Termin** (diese bei Bedarf
+einzeln über `POST /api/invoices/{id}/collection-date` verschieben). Prognosen (`nextCollectionDate`, Abrechnungskalender
+`GET /api/subscriptions/billing-calendar`, Einrichtungsseite) nutzen dieselbe Regel. Weiterhin höchstens ein offener
+Einzug je Abo: Die nächste Rechnung entsteht erst, wenn der vorherige Einzug abgeschlossen ist. Verzögert sich dadurch die
+Rechnung eines laufenden Abos mit festem Tag über den Periodenbeginn hinaus, wird die Periode trotzdem regulär (gleicher
+Anker) abgerechnet, solange ihr Abbuchungstag noch nicht vorbei ist; erst danach startet der Plan wie bisher ab heute neu.
 
 `lastSetupError` enthält den deutschen Kundentext, bei Ablehnung durch Mollie zusätzlich ` | Mollie: HTTP 422: …`
 (Mollie-Detail, IBANs maskiert wie `DE89********3000`). Es wird nie eine vollständige IBAN gespeichert.
