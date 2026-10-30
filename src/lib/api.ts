@@ -713,6 +713,7 @@ deleteServiceItem: (id: string) =>
   updateEstimate: (id: string, data: SaveEstimateRequest) => apiFetch<EstimateDetail>(`/estimates/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   duplicateEstimate: (id: string) => apiFetch<EstimateDetail>(`/estimates/${id}/duplicate`, { method: "POST" }),
   deleteEstimate: (id: string) => apiFetch<void>(`/estimates/${id}`, { method: "DELETE" }),
+  createQuoteFromEstimate: (id: string, data: { priceMode: string }) => apiFetch<any>(`/estimates/${id}/create-quote`, { method: "POST", body: JSON.stringify(data) }),
   estimatePdfBlob: async (id: string) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
