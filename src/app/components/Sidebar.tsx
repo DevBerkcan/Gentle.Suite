@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
+import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ListChecks, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { workspaces, type Workspace } from "./workspaces";
 
@@ -62,6 +62,7 @@ const navByWorkspace: Record<Workspace, { home: string; groups: NavGroup[] }> = 
       { items: [
         { href: "/contracts", label: "Dashboard", icon: LayoutDashboard },
         { href: "/contracts/list", label: "Verträge", icon: FileSignature },
+        { href: "/contracts/projects", label: "Projekt-Ablauf", icon: ListChecks },
         { href: "/contracts/estimates", label: "Schätzungen", icon: Ruler },
         { href: "/contracts/templates", label: "Vertragsvorlagen", icon: FileStack },
         { href: "/customers", label: "Kunden", icon: Users },

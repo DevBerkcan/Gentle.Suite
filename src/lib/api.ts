@@ -688,6 +688,16 @@ deleteServiceItem: (id: string) =>
     if (!res.ok) throw new Error(await res.text());
     return res.blob();
   },
+  // Rechts-Ablauf pro Projekt (Legal-Cockpit-Workflow)
+  legalWorkflows: () => apiFetch<any[]>("/legal-workflows"),
+  legalWorkflow: (quoteId: string) => apiFetch<any>(`/legal-workflows/${quoteId}`),
+  updateLegalWorkflowItem: (quoteId: string, data: { key: string; state: string; note?: string | null }) => apiFetch<any>(`/legal-workflows/${quoteId}/items`, { method: "PUT", body: JSON.stringify(data) }),
+  sendLegalRightsRequest: (quoteId: string, data: { recipientEmail?: string }) => apiFetch<any>(`/legal-workflows/${quoteId}/rights-request`, { method: "POST", body: JSON.stringify(data) }),
+  sendLegalAcceptanceRequest: (quoteId: string, data: { recipientEmail?: string; scope?: string; deadlineDays?: number }) => apiFetch<any>(`/legal-workflows/${quoteId}/acceptance-request`, { method: "POST", body: JSON.stringify(data) }),
+  publicRightsRelease: (token: string) => publicFetch<any>(`/public/legal/rights/${token}`),
+  confirmPublicRightsRelease: (token: string, data: any) => publicFetch<any>(`/public/legal/rights/${token}`, { method: "POST", body: JSON.stringify(data) }),
+  publicAcceptance: (token: string) => publicFetch<any>(`/public/legal/acceptance/${token}`),
+  processPublicAcceptance: (token: string, data: any) => publicFetch<any>(`/public/legal/acceptance/${token}`, { method: "POST", body: JSON.stringify(data) }),
   // Agency Contract public signing (token link)
   agencyContractApproval: (token: string) => apiFetch<any>(`/contract-approval/${token}`),
   processAgencyContractApproval: (token: string, data: any) => apiFetch<any>(`/contract-approval/${token}`, { method: "POST", body: JSON.stringify(data) }),

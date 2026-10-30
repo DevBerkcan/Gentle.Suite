@@ -6,7 +6,7 @@ import TopHeader from "./TopHeader";
 import { X } from "lucide-react";
 import { workspaceForPath, type Workspace } from "./workspaces";
 
-const PUBLIC_PATHS = ["/login", "/approval", "/payment", "/agency-contract"];
+const PUBLIC_PATHS = ["/login", "/approval", "/payment", "/agency-contract", "/legal/"];
 const NO_SIDEBAR_PATHS = ["/workspace"];
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
