@@ -38,6 +38,7 @@ const KIND_LABELS: Record<string, string> = {
   "mandate-email-failed": "Mandats-E-Mail fehlgeschlagen",
   "authorization-missing": "Freigabe fehlt",
   "webhook-errors": "Webhook-Fehler",
+  "mail-delivery-failed": "Mailversand",
 };
 
 const MICRO = "text-[10px] font-semibold uppercase tracking-[0.2em] text-muted";
