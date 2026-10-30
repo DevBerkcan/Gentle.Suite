@@ -11,8 +11,10 @@ const CATEGORY_LABELS: Record<string, string> = {
   kreativ: "Kreativ (automatisch bei Werkvertrag)",
   optionen: "Optionale Regelungen",
   webseiten: "Webseiten",
+  software: "Software, APIs & Apps",
   design: "Design",
   marketing: "Marketing",
+  beratung: "Beratung",
   wartung: "Wartung & Pflege",
 };
 const emptyBlockForm = { key: "", category: "webseiten", title: "", content: "", isActive: true, sortOrder: 0, isCreativeWork: false };

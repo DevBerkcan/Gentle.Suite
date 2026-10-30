@@ -5,11 +5,13 @@ import { api } from "@/lib/api";
 
 const CATEGORY_LABELS: Record<string, string> = {
   webseiten: "Webseiten",
+  software: "Software, APIs & Apps",
   design: "Design",
   marketing: "Marketing",
+  beratung: "Beratung",
   wartung: "Wartung & Pflege",
 };
-const KNOWN_CATEGORY_ORDER = ["webseiten", "design", "marketing", "wartung"];
+const KNOWN_CATEGORY_ORDER = ["webseiten", "software", "design", "marketing", "beratung", "wartung"];
 const RESERVED_CATEGORIES = ["kern", "kreativ", "optionen"];
 
 function ContractWizard() {
