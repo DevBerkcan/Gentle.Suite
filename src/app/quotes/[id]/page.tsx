@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
 import PreisangebotModal from "./PreisangebotModal";
@@ -273,7 +274,7 @@ export default function QuoteDetailPage() {
       setSuccess("Angebot versendet");
       loadQuote();
       setTimeout(() => setSuccess(""), 3000);
-    } catch { setError("Fehler beim Versenden"); }
+    } catch (err: any) { setShowSend(false); setError(err?.message || "Fehler beim Versenden"); }
   }
 
   async function handlePdfDownload() {
@@ -379,6 +380,7 @@ export default function QuoteDetailPage() {
           <button onClick={handleDuplicate} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Duplizieren</button>
           {isCurrentVersion && !editing && <button onClick={handleCreateNewVersion} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Neue Version</button>}
           {isCurrentVersion && !editing && ["Draft", "Sent", "Viewed"].includes(quoteStatus) && <button disabled={deactivating} onClick={handleDeactivate} className="px-4 py-2 border border-border rounded-lg text-sm font-medium disabled:opacity-50">{deactivating ? "Wird deaktiviert..." : "Nicht aktiv"}</button>}
+          <Link href={`/contracts/projects/${id}`} className="px-4 py-2 border border-border rounded-lg text-sm font-medium">Projekt-Ablauf</Link>
           {(isCurrentVersion && ["Draft", "Sent", "Viewed"].includes(quoteStatus)) && <button onClick={() => { setSendForm({ ...sendForm, recipientEmail: quote.primaryContactEmail || "" }); setShowSend(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>}
           {quoteStatus === "Accepted" && <button onClick={handleMarkAsOrdered} className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium">Auftrag bestätigen</button>}
           {isCurrentVersion && ["Accepted", "Ordered"].includes(quoteStatus) && signatureStatus === "Signed" && quote.requiresAgencyContract && (
@@ -783,6 +785,17 @@ export default function QuoteDetailPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowSend(false)}>
           <div className="bg-surface rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
             <h2 className="text-xl font-bold mb-4">Angebot versenden</h2>
+            {(() => {
+              // AGB must go out with every quote (as in Legal Cockpit) — the API refuses to send without them.
+              const agb = (quote.legalTextBlockOptions || []).filter((lt: any) => lt.type === "Agb");
+              return agb.length > 0 ? (
+                <div className="mb-3 rounded-lg bg-green-50 px-3 py-2 text-sm text-success">✓ Beigefügt: {agb.map((a: any) => a.title).join(", ")}</div>
+              ) : (
+                <div className="mb-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-danger">
+                  Ohne AGB kann das Angebot nicht versendet werden. <Link href="/legal-texts" className="font-medium underline">AGB unter Rechtstexte hinterlegen</Link> und „automatisch an Angebote anhängen“ aktivieren.
+                </div>
+              );
+            })()}
             <form onSubmit={handleSend} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium mb-1">Empfaenger E-Mail *</label>
@@ -801,7 +814,7 @@ export default function QuoteDetailPage() {
                 Digitale Unterschrift erforderlich
               </label>
               <div className="flex gap-2">
-                <button type="submit" className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">Versenden</button>
+                <button type="submit" disabled={!(quote.legalTextBlockOptions || []).some((lt: any) => lt.type === "Agb")} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium disabled:opacity-50">Versenden</button>
                 <button type="button" onClick={() => setShowSend(false)} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button>
               </div>
             </form>
