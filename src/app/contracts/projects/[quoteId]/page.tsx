@@ -107,6 +107,9 @@ export default function LegalWorkflowDetailPage() {
           AV-Vertrag aus Vorlage erstellen
         </button>
       );
+    if (step.key === "website") return (
+      <Link href={`/contracts/website-texts?customerId=${wf.customerId}`} className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline">Impressum, Datenschutz & Barrierefreiheit generieren<ExternalLink className="h-3.5 w-3.5" /></Link>
+    );
     if (step.key === "rights") return wf.rightsGrantedAt ? (
       <p className="text-sm text-muted">Bestätigt am {fmt(wf.rightsGrantedAt)} von {wf.rightsGrantedByName} · Referenz-Nutzung: {wf.rightsReferenceConsent ? "erlaubt" : "nicht erlaubt"}</p>
     ) : (
