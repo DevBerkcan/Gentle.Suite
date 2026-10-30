@@ -432,6 +432,8 @@ export interface CustomerSubscription {
   /** Fehler des letzten Versuchs (deutscher Kundentext, ggf. "| Mollie: …"); null = ok bzw. Mandat inzwischen gültig. */
   lastSetupError?: string | null;
   setupAttemptCount?: number | null;
+  /** Fester Abbuchungstag 1–28 (Ausnahme); null = Standard (Einzug zum Periodenbeginn). */
+  collectionDayOfMonth?: number | null;
 }
 
 export type MandateMethod = "directdebit" | "creditcard" | "paypal";
@@ -454,6 +456,11 @@ export interface SubscriptionInvoice {
   paidAt?: string | null;
   chargedBack: boolean;
   lastFailureReason?: string | null;
+}
+
+/** PUT /api/subscriptions/{id}/collection-day (Admin) — 1–28 oder null (= Standard). Gilt nur für künftige Rechnungen. */
+export interface SetCollectionDayRequest {
+  day: number | null;
 }
 
 /** POST /api/invoices/{id}/collection-date (Admin) */

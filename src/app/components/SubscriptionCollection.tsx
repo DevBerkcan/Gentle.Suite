@@ -355,6 +355,84 @@ export function NextCollection({ sub, fallbackDate }: { sub: CustomerSubscriptio
   return <span className="text-sm text-muted">{fallbackDate ? formatDate(fallbackDate) : "–"}</span>;
 }
 
+/* ───────── Abbuchungstag (Admin) ───────── */
+
+const COLLECTION_DAYS = Array.from({ length: 28 }, (_, i) => i + 1);
+const COLLECTION_DAY_HINT = "Gilt für alle künftigen Rechnungen; bereits erstellte Rechnungen behalten ihren Termin.";
+
+/** Fester Abbuchungstag je Abo/Ratenplan (1–28) oder Standard = Einzug zum Periodenbeginn. Nur für Admins. */
+export function CollectionDaySetting({ sub, onUpdated, onError }: { sub: CustomerSubscription; onUpdated: (s: CustomerSubscription) => void; onError?: (msg: string) => void }) {
+  const isAdmin = useIsAdmin();
+  const current = sub.collectionDayOfMonth ?? null;
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(current == null ? "" : String(current));
+  const [saving, setSaving] = useState(false);
+
+  if (!isAdmin) return null;
+
+  async function save() {
+    if (saving) return;
+    const day = value === "" ? null : Number(value);
+    if (day === current) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      onUpdated(await api.setSubscriptionCollectionDay(sub.id, { day }));
+      setEditing(false);
+    } catch (e: any) {
+      onError?.(e?.message || "Abbuchungstag konnte nicht gespeichert werden");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="max-w-5xl rounded-2xl border border-border bg-surface px-4 py-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <p className="inline-flex items-center gap-1.5 text-sm text-text">
+          <CalendarClock className="h-4 w-4 text-secondary" aria-hidden="true" />
+          <span className="text-muted">Abbuchungstag:</span>
+          <span className="font-semibold">{current == null ? "Standard (Periodenbeginn)" : `am ${current}. (Ausnahme)`}</span>
+        </p>
+        {editing ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <label htmlFor={`collection-day-${sub.id}`} className="sr-only">Abbuchungstag wählen</label>
+            <select
+              id={`collection-day-${sub.id}`}
+              value={value}
+              onChange={e => setValue(e.target.value)}
+              disabled={saving}
+              className="rounded-lg border border-border bg-surface px-2.5 py-1 text-sm"
+            >
+              <option value="">Standard (Periodenbeginn)</option>
+              {COLLECTION_DAYS.map(d => <option key={d} value={d}>am {d}.</option>)}
+            </select>
+            <button type="button" onClick={save} disabled={saving} className="rounded-lg bg-primary px-3 py-1 text-xs font-medium text-white hover:bg-primary-hover disabled:opacity-50">
+              {saving ? "Wird gespeichert …" : "Speichern"}
+            </button>
+            <button
+              type="button"
+              onClick={() => { setEditing(false); setValue(current == null ? "" : String(current)); }}
+              disabled={saving}
+              className="rounded-lg border border-border px-3 py-1 text-xs font-medium hover:bg-background disabled:opacity-50"
+            >
+              Abbrechen
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => { setValue(current == null ? "" : String(current)); setEditing(true); }}
+            className="inline-flex items-center gap-1 rounded-full border border-border bg-surface px-2.5 py-0.5 text-xs font-medium text-text transition-colors hover:border-navy/40 hover:bg-background"
+          >
+            Ändern
+          </button>
+        )}
+      </div>
+      {editing && <p className="mt-1.5 text-xs text-muted">{COLLECTION_DAY_HINT}</p>}
+    </div>
+  );
+}
+
 /* ───────── Mandat ───────── */
 
 export function mandateLabel(method?: string | null, last4?: string | null) {
