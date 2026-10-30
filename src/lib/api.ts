@@ -688,6 +688,9 @@ deleteServiceItem: (id: string) =>
     if (!res.ok) throw new Error(await res.text());
     return res.blob();
   },
+  // Website-Rechtstexte-Generator (Konfiguration je Kunde)
+  websiteLegal: (customerId: string) => apiFetch<any>(`/website-legal/${customerId}`),
+  saveWebsiteLegal: (customerId: string, config: any) => apiFetch<any>(`/website-legal/${customerId}`, { method: "PUT", body: JSON.stringify(config) }),
   // Rechts-Ablauf pro Projekt (Legal-Cockpit-Workflow)
   legalWorkflows: () => apiFetch<any[]>("/legal-workflows"),
   legalWorkflow: (quoteId: string) => apiFetch<any>(`/legal-workflows/${quoteId}`),

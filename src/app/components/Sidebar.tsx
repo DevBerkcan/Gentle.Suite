@@ -63,6 +63,7 @@ const navByWorkspace: Record<Workspace, { home: string; groups: NavGroup[] }> = 
         { href: "/contracts", label: "Dashboard", icon: LayoutDashboard },
         { href: "/contracts/list", label: "Verträge", icon: FileSignature },
         { href: "/contracts/projects", label: "Projekt-Ablauf", icon: ListChecks },
+        { href: "/contracts/website-texts", label: "Website-Rechtstexte", icon: Scale },
         { href: "/contracts/estimates", label: "Schätzungen", icon: Ruler },
         { href: "/contracts/templates", label: "Vertragsvorlagen", icon: FileStack },
         { href: "/customers", label: "Kunden", icon: Users },
