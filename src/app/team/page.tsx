@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import UserAvatar from "@/app/components/UserAvatar";
 
 const EMPTY_FORM = { firstName: "", lastName: "", email: "", phone: "", jobTitle: "", appUserId: "", isActive: true };
 
@@ -89,7 +90,12 @@ export default function TeamPage() {
           <tbody>
             {filtered.map((m: any) => (
               <tr key={m.id} className="border-b border-border hover:bg-background/50">
-                <td className="px-4 py-3 text-sm font-medium">{m.firstName} {m.lastName}</td>
+                <td className="px-4 py-3 text-sm font-medium">
+                  <div className="flex items-center gap-3">
+                    <UserAvatar avatarUrl={m.appUserId ? users.find((u: any) => u.id === m.appUserId)?.avatarUrl : null} name={`${m.firstName} ${m.lastName}`} sizeClass="w-8 h-8 text-xs" />
+                    <span>{m.firstName} {m.lastName}</span>
+                  </div>
+                </td>
                 <td className="px-4 py-3 text-sm text-muted">{m.email || "–"}</td>
                 <td className="px-4 py-3 text-sm text-muted">{m.phone || "–"}</td>
                 <td className="px-4 py-3 text-sm">{m.jobTitle || "–"}</td>

@@ -26,6 +26,103 @@ const statusMap: Record<string, string> = {
   Expired: "Abgelaufen",
 };
 
+// Rechnungsart (serverseitig abgeleitet, siehe InvoiceKinds im Backend)
+const kindOptions: { value: string; label: string }[] = [
+  { value: "", label: "Alle Arten" },
+  { value: "standard", label: "Normal" },
+  { value: "installment", label: "Ratenzahlung" },
+  { value: "downpayment", label: "Anzahlung" },
+  { value: "recurring", label: "Serienrechnung" },
+  { value: "cancellation", label: "Storno" },
+  { value: "creditnote", label: "Gutschrift" },
+];
+const kindLabel: Record<string, string> = Object.fromEntries(kindOptions.filter((k) => k.value).map((k) => [k.value, k.label]));
+const kindBadgeClass: Record<string, string> = {
+  standard: "bg-background text-muted border border-border",
+  installment: "bg-secondary/15 text-secondary",
+  downpayment: "bg-secondary/10 text-secondary border border-secondary/30",
+  recurring: "bg-accent/40 text-navy",
+  cancellation: "bg-red-50 text-danger",
+  creditnote: "bg-blue-50 text-blue-700",
+};
+const statusValues = ["Draft", "Final", "Open", "Overdue", "Paid", "Cancelled"];
+
+type InvoiceFilters = { status: string; kind: string; customerId: string };
+const emptyFilters: InvoiceFilters = { status: "", kind: "", customerId: "" };
+
+function filtersToQuery(f: InvoiceFilters) {
+  const q = new URLSearchParams();
+  if (f.status) q.set("status", f.status);
+  if (f.kind) q.set("kind", f.kind);
+  if (f.customerId) q.set("customerId", f.customerId);
+  return q;
+}
+
+/** Durchsuchbare Kundenauswahl für den Filter (serverseitige Suche, max. 20 Treffer). */
+function CustomerFilter({ value, label, onChange }: { value: string; label: string; onChange: (id: string, name: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [results, setResults] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const t = setTimeout(() => {
+      const params = new URLSearchParams({ pageSize: "20" });
+      if (query.trim()) params.set("search", query.trim());
+      setLoading(true);
+      api.customers(params.toString())
+        .then((r: any) => setResults(r?.items || []))
+        .catch(() => setResults([]))
+        .finally(() => setLoading(false));
+    }, 250);
+    return () => clearTimeout(t);
+  }, [query, open]);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  return (
+    <div className="relative" ref={ref}>
+      <div className={`flex items-center gap-1 pl-3 pr-1 py-1 border rounded-full text-sm bg-surface ${value ? "border-navy" : "border-border"}`}>
+        <input
+          value={open ? query : value ? label : ""}
+          onFocus={() => { setOpen(true); setQuery(""); }}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Kunde filtern…"
+          className="bg-transparent outline-none w-44 placeholder:text-muted"
+        />
+        {value && (
+          <button type="button" title="Kundenfilter entfernen" onClick={() => { onChange("", ""); setOpen(false); }} className="w-6 h-6 rounded-full text-muted hover:bg-background hover:text-text">
+            ×
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-72 max-h-72 overflow-y-auto bg-surface border border-border rounded-xl shadow-lg py-1 z-40">
+          {loading && <div className="px-4 py-2 text-sm text-muted">Suche läuft…</div>}
+          {!loading && results.length === 0 && <div className="px-4 py-2 text-sm text-muted">Keine Kunden gefunden</div>}
+          {!loading && results.map((c: any) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => { onChange(c.id, c.companyName); setOpen(false); }}
+              className={`w-full text-left px-4 py-2 text-sm hover:bg-background ${c.id === value ? "font-semibold" : ""}`}
+            >
+              {c.companyName}
+              {c.customerNumber && <span className="ml-2 text-xs text-muted">{c.customerNumber}</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function InvoicesPage() {
   const emptyForm = {
     customerId: "",
@@ -49,7 +146,8 @@ export default function InvoicesPage() {
   const [form, setForm, clearForm] = useLocalStorage("draft:invoice-create", emptyForm);
   const [lines, setLines, clearLines] = useLocalStorage("draft:invoice-lines", [emptyLine()]);
   const [saving, setSaving] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [filters, setFilters] = useState<InvoiceFilters>(emptyFilters);
+  const [customerFilterName, setCustomerFilterName] = useState("");
   const [xmlDownloading, setXmlDownloading] = useState<string | null>(null);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [payingInvoice, setPayingInvoice] = useState<any | null>(null);
@@ -66,17 +164,47 @@ export default function InvoicesPage() {
   const servicePickerRef = useRef<HTMLDivElement>(null);
   const [pickerAnchor, setPickerAnchor] = useState<{ top: number; left: number } | null>(null);
 
-  const load = (status = "", p = 1) => {
-    const params = new URLSearchParams({ page: String(p), pageSize: String(pageSize) });
-    if (status) params.set("status", status);
+  const load = (f: InvoiceFilters = filters, p = 1) => {
+    const params = filtersToQuery(f);
+    // Filter + Seite im URL halten, damit sie einen Reload überstehen.
+    const urlQuery = new URLSearchParams(params);
+    if (p > 1) urlQuery.set("page", String(p));
+    const qs = urlQuery.toString();
+    window.history.replaceState(window.history.state, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+
+    params.set("page", String(p));
+    params.set("pageSize", String(pageSize));
     api
       .invoices(params.toString())
       .then(setData)
       .catch(() => setError("Rechnungen konnten nicht geladen werden"));
   };
 
+  const applyFilters = (f: InvoiceFilters) => {
+    setFilters(f);
+    setPage(1);
+    setSelected(new Set());
+    load(f, 1);
+  };
+
   useEffect(() => {
-    load();
+    // Filter aus dem URL übernehmen (Reload / geteilter Link).
+    const q = new URLSearchParams(window.location.search);
+    const status = q.get("status") || "";
+    const kind = q.get("kind") || "";
+    const initial: InvoiceFilters = {
+      status: statusValues.includes(status) ? status : "",
+      kind: kindLabel[kind] ? kind : "",
+      customerId: q.get("customerId") || "",
+    };
+    const p = Math.max(1, parseInt(q.get("page") || "1", 10) || 1);
+    setFilters(initial);
+    setPage(p);
+    load(initial, p);
+    if (initial.customerId) {
+      api.customer(initial.customerId).then((c: any) => setCustomerFilterName(c?.companyName || "")).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -319,7 +447,7 @@ const save = async () => {
       setSelected(new Set());
       setSuccess(`${selected.size} Rechnungen finalisiert.`);
       setTimeout(() => setSuccess(""), 4000);
-      load(statusFilter, page);
+      load(filters, page);
     } catch {
       setError("Fehler beim Finalisieren.");
     } finally {
@@ -335,7 +463,7 @@ const save = async () => {
       setSelected(new Set());
       setSuccess(`${selected.size} Rechnungen gesendet.`);
       setTimeout(() => setSuccess(""), 4000);
-      load(statusFilter, page);
+      load(filters, page);
     } catch {
       setError("Fehler beim Senden.");
     } finally {
@@ -351,7 +479,7 @@ const save = async () => {
       await api.cancelInvoice(inv.id, { reason: "Stornierung" });
       setSuccess("Storno-Rechnung erstellt.");
       setTimeout(() => setSuccess(""), 4000);
-      load(statusFilter, page);
+      load(filters, page);
     } catch {
       setError("Stornierung fehlgeschlagen.");
     } finally {
@@ -368,7 +496,7 @@ const save = async () => {
       setListPaymentForm({ amount: 0, paymentDate: new Date().toISOString().split("T")[0], paymentMethod: "BankTransfer", reference: "", note: "" });
       setSuccess("Zahlung erfasst.");
       setTimeout(() => setSuccess(""), 4000);
-      load(statusFilter, page);
+      load(filters, page);
     } catch {
       setError("Zahlung konnte nicht erfasst werden.");
     }
@@ -380,12 +508,8 @@ const save = async () => {
         <div className="flex items-center gap-4">
           <h1 className="text-2xl font-bold">Rechnungen</h1>
           <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
-              setPage(1);
-              load(e.target.value, 1);
-            }}
+            value={filters.status}
+            onChange={(e) => applyFilters({ ...filters, status: e.target.value })}
             className="px-3 py-1.5 border border-border rounded-lg text-sm"
           >
             <option value="">Alle Status</option>
@@ -396,6 +520,11 @@ const save = async () => {
             <option value="Paid">Bezahlt</option>
             <option value="Cancelled">Storniert</option>
           </select>
+          <CustomerFilter
+            value={filters.customerId}
+            label={customerFilterName}
+            onChange={(id, name) => { setCustomerFilterName(name); applyFilters({ ...filters, customerId: id }); }}
+          />
         </div>
         <div className="flex items-center gap-2">
           {selected.size > 0 && (
@@ -418,7 +547,7 @@ const save = async () => {
             </>
           )}
           <a
-            href={api.exportInvoicesCsv(statusFilter || undefined)}
+            href={api.exportInvoicesCsv(filtersToQuery(filters).toString() || undefined)}
             className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-background"
           >
             CSV Export
@@ -442,6 +571,34 @@ const save = async () => {
         <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>
       )}
 
+      {/* Rechnungsart-Filter */}
+      <div className="flex flex-wrap items-center gap-2 mb-4">
+        {kindOptions.map((k) => (
+          <button
+            key={k.value || "all"}
+            type="button"
+            onClick={() => applyFilters({ ...filters, kind: k.value })}
+            className={`px-4 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              filters.kind === k.value
+                ? "bg-navy text-accent"
+                : "border border-border text-muted hover:text-text hover:bg-background"
+            }`}
+          >
+            {k.label}
+          </button>
+        ))}
+        {(filters.status || filters.kind || filters.customerId) && (
+          <button
+            type="button"
+            onClick={() => { setCustomerFilterName(""); applyFilters(emptyFilters); }}
+            className="ml-1 text-xs text-muted hover:text-text underline"
+          >
+            Filter zurücksetzen
+          </button>
+        )}
+        {data && <span className="ml-auto text-xs text-muted">{data.totalCount} Rechnungen</span>}
+      </div>
+
       <div className="bg-surface rounded-xl border border-border overflow-hidden">
         <table className="w-full">
           <thead>
@@ -455,6 +612,7 @@ const save = async () => {
                 />
               </th>
               <th className="px-4 py-3 text-left text-xs text-muted">Nr.</th>
+              <th className="px-4 py-3 text-left text-xs text-muted">Art</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Kunde</th>
               <th className="px-4 py-3 text-left text-xs text-muted">Status</th>
               <th className="px-4 py-3 text-right text-xs text-muted">Brutto</th>
@@ -486,6 +644,11 @@ const save = async () => {
                   />
                 </td>
                 <td className="px-4 py-3 font-medium">{i.invoiceNumber}</td>
+                <td className="px-4 py-3">
+                  <span className={`text-[11px] px-2 py-0.5 rounded-full whitespace-nowrap ${kindBadgeClass[i.kind] ?? kindBadgeClass.standard}`}>
+                    {kindLabel[i.kind] ?? "Normal"}
+                  </span>
+                </td>
                 <td className="px-4 py-3">{i.customerName}</td>
                 <td className="px-4 py-3">
                   <span
@@ -543,7 +706,9 @@ const save = async () => {
           </tbody>
         </table>
         {data?.items?.length === 0 && (
-          <div className="p-8 text-center text-muted text-sm">Keine Rechnungen vorhanden.</div>
+          <div className="p-8 text-center text-muted text-sm">
+            {filters.status || filters.kind || filters.customerId ? "Keine Rechnungen für die gewählten Filter." : "Keine Rechnungen vorhanden."}
+          </div>
         )}
       </div>
 
@@ -556,7 +721,7 @@ const save = async () => {
               onClick={() => {
                 const p = page - 1;
                 setPage(p);
-                load(statusFilter, p);
+                load(filters, p);
               }}
               className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-background disabled:opacity-40"
             >
@@ -570,7 +735,7 @@ const save = async () => {
               onClick={() => {
                 const p = page + 1;
                 setPage(p);
-                load(statusFilter, p);
+                load(filters, p);
               }}
               className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-background disabled:opacity-40"
             >

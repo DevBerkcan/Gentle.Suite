@@ -244,6 +244,22 @@ export interface InvoiceListItem {
   invoiceDate: string;
   dueDate: string;
   paidAt?: string | null;
+  /** Abgeleitete Rechnungsart (Server), siehe InvoiceKind. */
+  kind?: InvoiceKind;
+}
+
+export type InvoiceKind = "standard" | "installment" | "downpayment" | "recurring" | "cancellation" | "creditnote";
+
+/** Login-Benutzer (Users-Liste, eigenes Profil). avatarUrl ist relativ zu /api und nur mit Token abrufbar. */
+export interface UserAccount {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  fullName?: string;
+  isActive: boolean;
+  roles: string[];
+  avatarUrl?: string | null;
 }
 
 export interface InvoiceDetail {
@@ -394,6 +410,108 @@ export interface CustomerSubscription {
   downPaymentInvoiceId?: Id | null;
   paymentPlanOptionKey?: string | null;
   billingStage?: string;
+  // Mollie-Überarbeitung (docs/mollie-api-contract.md §2)
+  /** Tag des nächsten Einzugs; null = unbestimmt. */
+  nextCollectionDate?: string | null;
+  /** Bruttobetrag des nächsten Einzugs. */
+  nextCollectionAmount?: number | null;
+  /** null, solange die Rechnung noch nicht erstellt ist (Prognose). */
+  nextCollectionInvoiceNumber?: string | null;
+  nextCollectionIsForecast?: boolean;
+  /** z. B. "Mandat fehlt", "Freigabe fehlt", "Abo pausiert". */
+  nextCollectionBlockedReason?: string | null;
+  mandateMethod?: MandateMethod | null;
+  mandateAccountLast4?: string | null;
+  mandateSetupUrl?: string | null;
+  invoicesPaid?: number;
+  invoicesTotal?: number;
+  outstandingAmount?: number;
+}
+
+export type MandateMethod = "directdebit" | "creditcard" | "paypal";
+
+/** Einzugsstatus einer Abo-Rechnung (Mollie). */
+export type PaymentCollectionStatus = "scheduled" | "open" | "pending" | "authorized" | "paid" | "failed" | "canceled" | "expired" | "error" | string;
+
+/** GET /api/subscriptions/{id}/invoices */
+export interface SubscriptionInvoice {
+  id: Id;
+  invoiceNumber: string;
+  invoiceDate: string;
+  status: string;
+  grossTotal: number;
+  billingPeriodStart?: string | null;
+  billingPeriodEnd?: string | null;
+  paymentCollectionDueDate?: string | null;
+  paymentCollectionStatus?: PaymentCollectionStatus | null;
+  collectionAttemptCount: number;
+  paidAt?: string | null;
+  chargedBack: boolean;
+  lastFailureReason?: string | null;
+}
+
+/** GET /api/public/mandate-setup/{token} (öffentlich) */
+export interface MandateSetupInfo {
+  status: "pending" | "valid" | "processing" | "invalid";
+  customerName: string;
+  contactName?: string | null;
+  creditorName: string;
+  creditorId?: string | null;
+  description?: string | null;
+  amountText?: string | null;
+  nextCollectionDate?: string | null;
+  nextCollectionAmount?: number | null;
+  methods: { iban: boolean; card: boolean };
+  mandateText?: string | null;
+  existingMandate?: { method: MandateMethod | string; accountLast4?: string | null } | null;
+}
+
+export interface MandateSetupIbanRequest {
+  accountHolder: string;
+  iban: string;
+  confirm: boolean;
+}
+
+export interface PaymentJobRun {
+  startedAt: string;
+  finishedAt?: string | null;
+  succeeded: boolean;
+  error?: string | null;
+}
+
+export interface BillingRunSummary extends PaymentJobRun {
+  invoicesCreated: number;
+  collectionsStarted: number;
+  failures: number;
+}
+
+export interface MandateReconcileSummary extends PaymentJobRun {
+  updated: number;
+}
+
+export type MonitoringSeverity = "critical" | "warning" | "info";
+
+export type MonitoringIssueKind =
+  | "billing-job-stale" | "billing-job-failed" | "collection-overdue" | "collection-stuck" | "collection-failed"
+  | "chargeback" | "mandate-missing" | "mandate-email-failed" | "authorization-missing" | "webhook-errors";
+
+export interface MonitoringIssue {
+  severity: MonitoringSeverity;
+  kind: MonitoringIssueKind | string;
+  title: string;
+  detail?: string | null;
+  customerName?: string | null;
+  subscriptionId?: Id | null;
+  invoiceId?: Id | null;
+  since?: string | null;
+}
+
+/** GET /api/monitoring/payments */
+export interface PaymentMonitoring {
+  lastBillingRun?: BillingRunSummary | null;
+  lastMandateReconcile?: MandateReconcileSummary | null;
+  issues: MonitoringIssue[];
+  counts: { critical: number; warning: number; info: number };
 }
 
 export interface BillingCalendarOccurrence {

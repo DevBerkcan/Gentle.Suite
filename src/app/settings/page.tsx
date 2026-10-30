@@ -1,9 +1,20 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
+import AvatarEditor from "@/app/components/AvatarEditor";
+import { updateStoredUser } from "@/lib/currentUser";
+import type { UserAccount } from "@/types/api";
 
 export default function SettingsPage() {
   const [form, setForm] = useState<any>(null);
+  const [me, setMe] = useState<UserAccount | null>(null);
+
+  useEffect(() => { api.profile().then(setMe).catch(() => {}); }, []);
+
+  function handleMeChanged(u: UserAccount) {
+    setMe(u);
+    updateStoredUser({ userId: u.id, avatarUrl: u.avatarUrl ?? null });
+  }
   const [numberYear, setNumberYear] = useState(new Date().getFullYear());
   const [numberRanges, setNumberRanges] = useState<any[]>([]);
   const [error, setError] = useState("");
@@ -143,6 +154,21 @@ export default function SettingsPage() {
 
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">x</button></div>}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
+
+      {/* Mein Profil */}
+      {me && (
+        <section className="bg-surface rounded-xl border border-border p-6 mb-8">
+          <h2 className="font-semibold mb-1">Mein Profil</h2>
+          <p className="text-sm text-muted mb-4">{`${me.firstName} ${me.lastName}`.trim()} · {me.email}</p>
+          <AvatarEditor
+            name={`${me.firstName} ${me.lastName}`}
+            avatarUrl={me.avatarUrl}
+            onUpload={api.uploadMyAvatar}
+            onRemove={api.removeMyAvatar}
+            onChanged={(u) => { handleMeChanged(u); setSuccess("Profilbild aktualisiert"); setTimeout(() => setSuccess(""), 3000); }}
+          />
+        </section>
+      )}
 
       <form onSubmit={handleSave} className="space-y-8">
         {/* Firmendaten */}

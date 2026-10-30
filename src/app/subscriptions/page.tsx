@@ -3,6 +3,7 @@ import { useEffect, useState, Fragment } from "react";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
+import { ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable } from "@/app/components/SubscriptionCollection";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -165,6 +166,9 @@ export default function SubscriptionsPage() {
     }
 
     initialize();
+    // Deep-Link aus dem Monitoring: /subscriptions?sub={id} klappt die Zeile auf
+    const linkedSub = new URLSearchParams(window.location.search).get("sub");
+    if (linkedSub) setExpandedSubId(linkedSub);
     try {
       const u = JSON.parse(localStorage.getItem("user") || "{}");
       setIsAdmin(u.role === "Admin" || u.roles?.includes("Admin"));
@@ -177,9 +181,11 @@ export default function SubscriptionsPage() {
   // KPI computations
   const activeSubs = nonInstallmentSubs.filter(s => s.status === "Active");
   const mrrTotal = activeSubs.reduce((sum, s) => sum + (s.monthlyPrice || 0), 0);
+  // Real debit date (pending invoice or forecast) — nextBillingDate already points one cycle ahead once an invoice exists.
+  const chargeDate = (s: any): string | null => s.nextCollectionDate ?? (s.nextCollectionBlockedReason ? null : s.nextBillingDate ?? null);
   const nextBillingSub = activeSubs
-    .filter(s => s.nextBillingDate)
-    .sort((a, b) => new Date(a.nextBillingDate).getTime() - new Date(b.nextBillingDate).getTime())[0];
+    .filter(s => chargeDate(s))
+    .sort((a, b) => new Date(chargeDate(a)!).getTime() - new Date(chargeDate(b)!).getTime())[0];
   const mandateIssuesCount = nonInstallmentSubs.filter(s => s.billingStage === "mandate").length;
   const totalIncome = nonInstallmentSubs.reduce((sum, s) => sum + Number(s.paidAmount || 0), 0);
 
@@ -253,6 +259,12 @@ export default function SubscriptionsPage() {
     } finally {
       setSendingMandateId(null);
     }
+  }
+
+  function replaceSub(updated: any) {
+    setSubs(list => list.map(x => (x.id === updated.id ? { ...x, ...updated } : x)));
+    setSuccess("Mandat mit Mollie abgeglichen");
+    setTimeout(() => setSuccess(""), 4000);
   }
 
   function handleExpandSub(id: string) {
@@ -379,9 +391,9 @@ export default function SubscriptionsPage() {
           onClick={() => setShowBillingCalendar(true)}
           className="bg-surface border border-border rounded-xl p-4 text-left cursor-pointer hover:border-primary hover:shadow-sm transition-all"
         >
-          <p className="text-xs text-muted mb-1">Nächste Abrechnung</p>
+          <p className="text-xs text-muted mb-1">Nächste Abbuchung</p>
           <p className="text-2xl font-bold">
-            {nextBillingSub ? new Date(nextBillingSub.nextBillingDate).toLocaleDateString("de") : "–"}
+            {nextBillingSub ? new Date(chargeDate(nextBillingSub)!).toLocaleDateString("de") : "–"}
           </p>
           <p className="text-xs text-primary mt-0.5">Kalender ansehen →</p>
         </button>
@@ -466,7 +478,7 @@ export default function SubscriptionsPage() {
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Rechnungsstellung</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Mandats-E-Mail</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Start</th>
-              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Nächste Abrechnung</th>
+              <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Nächste Abbuchung</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Laufzeit</th>
               <th className="px-4 py-3 text-right text-xs text-muted whitespace-nowrap">Preis/Monat</th>
               <th className="px-4 py-3 text-left text-xs text-muted whitespace-nowrap">Aktionen</th>
@@ -476,7 +488,12 @@ export default function SubscriptionsPage() {
             {filteredSubs.map((sub: any) => (
               <Fragment key={sub.id}>
                 <tr className="border-b border-border hover:bg-background">
-                  <td className="px-4 py-3 font-medium whitespace-nowrap">{sub.customerName || "–"}</td>
+                  <td className="px-4 py-3 font-medium whitespace-nowrap">
+                    <div className="flex items-center gap-2">
+                      <ExpandChevron expanded={expandedSubId === sub.id} onClick={() => handleExpandSub(sub.id)} label={sub.customerName || sub.planName} />
+                      <span>{sub.customerName || "–"}</span>
+                    </div>
+                  </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div>{sub.planName}</div>
                     <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "Legacy: kein Vertragsnachweis"}</div>
@@ -484,10 +501,13 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
                   </td>
-                  <td className="px-4 py-3 whitespace-nowrap">
-                    <span className={`text-xs px-2 py-1 rounded-full ${(billingStageMap[sub.billingStage] || billingStageMap.review).cls}`}>
+                  <td className="px-4 py-3">
+                    <span className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${(billingStageMap[sub.billingStage] || billingStageMap.review).cls}`}>
                       {(billingStageMap[sub.billingStage] || billingStageMap.review).label}
                     </span>
+                    <div className="mt-2">
+                      <MandateInfo sub={sub} isAdmin={isAdmin} onUpdated={replaceSub} onError={setError} />
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs whitespace-nowrap">
                     {sub.billingAuthorizedAt ? (
@@ -506,8 +526,8 @@ export default function SubscriptionsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{new Date(sub.startDate).toLocaleDateString("de")}</td>
-                  <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">
-                    {sub.status === "PendingConfirmation" ? "–" : new Date(sub.nextBillingDate).toLocaleDateString("de")}
+                  <td className="px-4 py-3">
+                    <NextCollection sub={sub} fallbackDate={sub.status === "PendingConfirmation" ? null : sub.nextBillingDate} />
                   </td>
                   <td className="px-4 py-3 text-sm text-muted whitespace-nowrap">{durationLabel(sub.contractDurationMonths)}</td>
                   <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{sub.monthlyPrice?.toFixed(2)} EUR</td>
@@ -527,20 +547,23 @@ export default function SubscriptionsPage() {
                       {(sub.status === "Active" || sub.status === "Paused" || sub.status === "PendingConfirmation") && (
                         <button onClick={() => handleStatus(sub.id, "Cancelled")} className="text-xs text-danger hover:underline">Kündigen</button>
                       )}
-                      <button onClick={() => handleExpandSub(sub.id)} className="text-xs text-gray-400 hover:text-gray-700 border border-gray-200 px-1.5 py-0.5 rounded">
-                        {expandedSubId === sub.id ? "▲" : "▼ Rechnungen"}
+                      <button onClick={() => handleExpandSub(sub.id)} className="text-xs text-muted hover:text-text border border-border px-2 py-0.5 rounded-full">
+                        {expandedSubId === sub.id ? "Schließen" : "Rechnungen"}
                       </button>
                     </div>
                   </td>
                 </tr>
                 {expandedSubId === sub.id && (
                   <tr>
-                    <td colSpan={11} className="bg-gray-50 px-6 py-4">
+                    <td colSpan={11} className="bg-background px-6 py-4 space-y-4">
+                      <SubscriptionInvoicesTable sub={sub} />
                       <SubscriptionPaymentHistory
+                        showInvoiceTable={false}
                         subscriptionId={sub.id}
                         amountPerPeriod={sub.monthlyPrice || 0}
                         nextBillingDate={sub.nextBillingDate}
                         status={sub.status}
+                        paidAmount={sub.paidAmount}
                       />
                     </td>
                   </tr>

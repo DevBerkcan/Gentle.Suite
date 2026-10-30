@@ -33,6 +33,8 @@ interface Props {
   status: string;
   /** Server-computed sum of actually paid (Mollie-confirmed) invoices — net amount. */
   paidAmount?: number;
+  /** false, wenn die Rechnungsliste separat angezeigt wird (SubscriptionInvoicesTable). */
+  showInvoiceTable?: boolean;
 }
 
 /**
@@ -50,6 +52,7 @@ export default function SubscriptionPaymentHistory({
   nextBillingDate,
   status,
   paidAmount,
+  showInvoiceTable = true,
 }: Props) {
   const [invoices, setInvoices] = useState<any[] | null>(null);
 
@@ -118,8 +121,8 @@ export default function SubscriptionPaymentHistory({
         )}
       </div>
 
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{isInstallmentPlan ? "Ratenverlauf" : "Rechnungsverlauf"}</p>
-      {invoices === null ? (
+      {showInvoiceTable && <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-2">{isInstallmentPlan ? "Ratenverlauf" : "Rechnungsverlauf"}</p>}
+      {!showInvoiceTable ? null : invoices === null ? (
         <p className="text-xs text-gray-400">Laden...</p>
       ) : invoices.length === 0 ? (
         <p className="text-xs text-gray-400">Noch keine Rechnungen vorhanden</p>

@@ -124,7 +124,7 @@ function PendingResult() {
   );
 }
 
-function FailedResult({ failureMessage }: { failureMessage?: string | null }) {
+function FailedResult({ failureMessage, setupToken }: { failureMessage?: string | null; setupToken?: string | null }) {
   return (
     <section className="my-auto overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_24px_70px_-32px_rgba(16,24,40,0.35)]">
       <div className="h-1.5 bg-gradient-to-r from-primary via-red-400 to-red-300" />
@@ -143,10 +143,20 @@ function FailedResult({ failureMessage }: { failureMessage?: string | null }) {
           {failureMessage || "Die Zahlungseinrichtung konnte nicht abgeschlossen werden."}
         </p>
 
-        <div className="mt-8 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
-          Sie erhalten in Kürze eine E-Mail mit einem neuen Einrichtungslink — gerne
-          dort mit einer anderen Karte oder Zahlungsart erneut versuchen.
-        </div>
+        {setupToken ? (
+          <a
+            href={`/payment/setup/${encodeURIComponent(setupToken)}`}
+            className="mt-8 inline-flex min-h-[48px] items-center justify-center rounded-full bg-navy px-6 py-3 text-base font-semibold text-white hover:bg-[#07143D] focus:outline-none focus-visible:ring-4 focus-visible:ring-secondary/50"
+          >
+            Noch einmal versuchen
+          </a>
+        ) : (
+          <div className="mt-8 rounded-xl border border-border bg-background px-4 py-3 text-sm text-muted">
+            Öffnen Sie bitte einfach noch einmal den Link aus unserer E-Mail — er bleibt
+            gültig. Dort können Sie es erneut versuchen, gerne auch mit einer anderen Karte
+            oder per Lastschrift vom Bankkonto.
+          </div>
+        )}
       </div>
     </section>
   );
@@ -167,6 +177,7 @@ function LoadingResult() {
 function MandateResult() {
   const params = useSearchParams();
   const subscriptionId = params.get("sub");
+  const setupToken = params.get("token");
   const [state, setState] = useState<ResultState>("loading");
   const [failureMessage, setFailureMessage] = useState<string | null>(null);
 
@@ -199,7 +210,7 @@ function MandateResult() {
   if (state === "loading") return <LoadingResult />;
   if (state === "valid") return <ValidResult />;
   if (state === "pending") return <PendingResult />;
-  return <FailedResult failureMessage={failureMessage} />;
+  return <FailedResult failureMessage={failureMessage} setupToken={setupToken} />;
 }
 
 export default function MandateResultPage() {

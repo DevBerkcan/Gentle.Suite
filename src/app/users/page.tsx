@@ -1,6 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
+import UserAvatar from "@/app/components/UserAvatar";
+import AvatarEditor from "@/app/components/AvatarEditor";
+import { getStoredUser, updateStoredUser } from "@/lib/currentUser";
+import type { UserAccount } from "@/types/api";
 
 const roles = ["Admin", "Projektmanager", "Designer", "Entwickler", "Marketing", "Buchhaltung"];
 const defaultForm = { email: "", firstName: "", lastName: "", password: "", roles: [] as string[] };
@@ -37,6 +41,13 @@ export default function UsersPage() {
     try { await api.resetUserPassword(pwId, { newPassword: newPw }); setPwId(null); setNewPw(""); setSuccess("Passwort zurueckgesetzt"); setTimeout(() => setSuccess(""), 3000); } catch (e: any) { setError(e.message); }
   };
 
+  // Profilbild im Bearbeiten-Dialog geändert: Liste aktualisieren, bei eigenem Konto auch den Header.
+  const handleAvatarChanged = (u: UserAccount) => {
+    setUsers((list) => list.map((x: any) => (x.id === u.id ? { ...x, avatarUrl: u.avatarUrl ?? null } : x)));
+    if (getStoredUser()?.userId === u.id) updateStoredUser({ avatarUrl: u.avatarUrl ?? null });
+  };
+  const editUser = editId ? users.find((u: any) => u.id === editId) : null;
+
   const deactivate = async (id: string) => {
     if (!confirm("Benutzer wirklich deaktivieren?")) return;
     try { await api.deleteUser(id); load(); } catch (e: any) { setError(e.message); }
@@ -57,7 +68,7 @@ export default function UsersPage() {
           <thead><tr className="border-b border-border bg-background"><th className="px-4 py-3 text-left text-xs text-muted">Name</th><th className="px-4 py-3 text-left text-xs text-muted">E-Mail</th><th className="px-4 py-3 text-left text-xs text-muted">Rollen</th><th className="px-4 py-3 text-left text-xs text-muted">Status</th><th className="px-4 py-3 text-right text-xs text-muted">Aktionen</th></tr></thead>
           <tbody>{users.map((u: any) => (
             <tr key={u.id} className="border-b border-border">
-              <td className="px-4 py-3 font-medium">{u.firstName} {u.lastName}</td>
+              <td className="px-4 py-3 font-medium"><div className="flex items-center gap-3"><UserAvatar avatarUrl={u.avatarUrl} name={`${u.firstName} ${u.lastName}`} sizeClass="w-8 h-8 text-xs" /><span>{u.firstName} {u.lastName}</span></div></td>
               <td className="px-4 py-3 text-sm">{u.email}</td>
               <td className="px-4 py-3"><div className="flex gap-1 flex-wrap">{u.roles?.map((r: string) => <span key={r} className="text-xs px-2 py-0.5 bg-primary/10 text-primary rounded-full">{r}</span>)}</div></td>
               <td className="px-4 py-3"><span className={`text-xs px-2 py-1 rounded-full ${u.isActive ? "bg-green-50 text-success" : "bg-gray-100 text-muted"}`}>{u.isActive ? "Aktiv" : "Inaktiv"}</span></td>
@@ -89,6 +100,18 @@ export default function UsersPage() {
       {editId && <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50"><div className="bg-surface rounded-xl border border-border p-6 w-full max-w-md shadow-xl">
         <h2 className="text-lg font-bold mb-4">Benutzer bearbeiten</h2>
         <div className="space-y-3">
+          {editUser && (
+            <div><label className="text-xs text-muted block mb-1">Profilbild</label>
+              <AvatarEditor
+                name={`${editUser.firstName} ${editUser.lastName}`}
+                avatarUrl={editUser.avatarUrl}
+                sizeClass="w-12 h-12 text-sm"
+                onUpload={(file) => api.uploadUserAvatar(editUser.id, file)}
+                onRemove={() => api.removeUserAvatar(editUser.id)}
+                onChanged={handleAvatarChanged}
+              />
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-3">
             <div><label className="text-xs text-muted block mb-1">Vorname</label><input value={editForm.firstName} onChange={e => setEditForm({...editForm, firstName: e.target.value})} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" /></div>
             <div><label className="text-xs text-muted block mb-1">Nachname</label><input value={editForm.lastName} onChange={e => setEditForm({...editForm, lastName: e.target.value})} className="w-full border border-border rounded-lg px-3 py-2 text-sm bg-background" /></div>
