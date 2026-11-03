@@ -88,6 +88,22 @@ Es wird **keine Willkommens-Mail** an den Kontakt verschickt.
 ```
 Antwort: `{ "outcome": "created" | "existing", "customerId": "…", "contactId": "…", "crmUrl": "…" }`
 
+## Lese-Schnittstelle für GentleHubs Agenten
+
+Derselbe Schlüssel gilt auch für die rein lesende Schnittstelle, die GentleHubs bestehender `GentleSuiteClient`
+nutzt (Basis `https://gentlesuite.runasp.net/api/integrations/gentlehub`, Header `X-GentleHub-Api-Key` oder `X-Api-Key`):
+
+| Endpunkt | Zweck |
+|---|---|
+| `GET /ping` | Verbindungstest (`scope: "read"`) |
+| `GET /customers/lookup?email=` | Kunde zur Absender-Adresse: exakter Kontakt (`contact_email`), sonst Firmen-Domain (`domain`, nie bei Freemail) |
+| `GET /customers/search?q=` | Suche nach Firmenname oder Kundennummer |
+| `GET /customers/{id}/context` | Kontakte, Projekte, Angebote (Kopfdaten), Verkaufschancen eines Kunden |
+
+In GentleHub reicht dafür die Konfiguration `GentleSuite:ApiUrl` (`https://gentlesuite.runasp.net`) und
+`GentleSuite:ApiKey` (der Schlüssel aus „Schnittstellen“). Ein serverseitiger Schlüssel in Gentlesuites
+appsettings ist nicht nötig.
+
 ## Fehler
 
 | Status | Bedeutung |
