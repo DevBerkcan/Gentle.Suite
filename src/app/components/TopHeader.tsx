@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState, useCallback } from "react";
+import { FiscalYearSwitch } from "./FiscalYear";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Sun, Moon, Plus, Receipt, FileText, Wallet, Ruler, ChevronDown, Settings, LogOut, Search, X, Menu } from "lucide-react";
@@ -133,6 +134,7 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
+        <FiscalYearSwitch />
 
         {/* Suche */}
         <div className="relative" ref={searchRef}>

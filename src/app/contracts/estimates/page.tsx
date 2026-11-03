@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useFiscalYear, withFiscalYear } from "@/lib/fiscalYear";
+import { ClosedYearListNotice } from "@/app/components/FiscalYear";
 import { Plus } from "lucide-react";
 import { api } from "@/lib/api";
 import type { EstimateListItem, EstimateStatus, PagedResult } from "@/types/api";
@@ -9,6 +11,7 @@ const STATUS_FILTERS: ("Alle" | EstimateStatus)[] = ["Alle", "Draft", "Sent", "A
 const PAGE_SIZE = 25;
 
 export default function EstimatesListPage() {
+  const { selectedIsClosed } = useFiscalYear();
   const [data, setData] = useState<PagedResult<EstimateListItem> | null>(null);
   const [error, setError] = useState("");
   const [statusFilter, setStatusFilter] = useState<"Alle" | EstimateStatus>("Alle");
@@ -20,7 +23,7 @@ export default function EstimatesListPage() {
     if (statusFilter !== "Alle") qs.set("status", statusFilter);
     if (search.trim()) qs.set("search", search.trim());
     const t = setTimeout(() => {
-      api.estimates(qs.toString()).then(setData).catch(() => setError("Schätzungen konnten nicht geladen werden"));
+      withFiscalYear(qs.toString()).then(p => api.estimates(p)).then(setData).catch(() => setError("Schätzungen konnten nicht geladen werden"));
     }, search ? 250 : 0);
     return () => clearTimeout(t);
   }, [page, statusFilter, search]);
@@ -35,11 +38,12 @@ export default function EstimatesListPage() {
           <h1 className="text-2xl font-bold">Schätzungen</h1>
           <p className="text-sm text-muted mt-0.5">Aufwandsschätzungen und Ersteinschätzungen mit Pauschalen — als PDF im Gentle-Group-Layout.</p>
         </div>
-        <a href="/contracts/estimates/new" className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover">
+        {!selectedIsClosed && <a href="/contracts/estimates/new" className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-hover">
           <Plus size={15} /> Neue Schätzung
-        </a>
+        </a>}
       </div>
 
+      <ClosedYearListNotice />
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>}
 
       <div className="flex flex-wrap items-center gap-3 mb-4">

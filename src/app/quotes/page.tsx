@@ -1,5 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import { withFiscalYear } from "@/lib/fiscalYear";
+import { ClosedYearListNotice } from "@/app/components/FiscalYear";
+import { useFiscalYear } from "@/lib/fiscalYear";
 import { api } from "@/lib/api";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -38,7 +41,8 @@ export default function QuotesPage() {
     return parts.join("&");
   }
 
-  function loadQuotes(params?: string) { api.quotes(params ?? buildParams()).then(setData).catch(() => setError("Angebote konnten nicht geladen werden")); }
+  const { selectedIsClosed } = useFiscalYear();
+  function loadQuotes(params?: string) { withFiscalYear(params ?? buildParams()).then(p => api.quotes(p)).then(setData).catch(() => setError("Angebote konnten nicht geladen werden")); }
 
   useEffect(() => {
     loadQuotes();
@@ -114,9 +118,10 @@ export default function QuotesPage() {
             {customers.map((c: any) => <option key={c.id} value={c.id}>{c.companyName}</option>)}
           </select>
         </div>
-        <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">+ Neues Angebot</button>
+        {!selectedIsClosed && <button onClick={() => setShowNew(true)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">+ Neues Angebot</button>}
       </div>
 
+      <ClosedYearListNotice />
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">x</button></div>}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 

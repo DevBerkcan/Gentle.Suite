@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { ClosedYearDocumentNotice } from "@/app/components/FiscalYear";
 
 function asInvoiceStatus(value: any) {
   if (typeof value === "number") {
@@ -234,6 +235,7 @@ async function handlePdfDownload() {
 
   return (
     <div className="p-8">
+      {invoice && invoice.status === "Draft" && <ClosedYearDocumentNotice date={invoice.invoiceDate} what="Dieser Rechnungsentwurf" />}
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">x</button></div>}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 
