@@ -107,6 +107,7 @@ export default function SubscriptionsPage() {
 
   // User role (for trigger button)
   const [isAdmin, setIsAdmin] = useState(false);
+  const [authorizingId, setAuthorizingId] = useState<string | null>(null);
 
   function loadPlans() {
     api.plans().then(setPlans).catch(() => {});
@@ -259,6 +260,35 @@ export default function SubscriptionsPage() {
     } finally {
       setSendingMandateId(null);
     }
+  }
+
+  async function handleExternalContract(sub: any) {
+    const reference = prompt(
+      "Welcher Vertrag gilt für dieses Abo? (wird als Nachweis gespeichert)\n\nz. B. „Agenturvertrag vom 17.02.2026 (Legal Cockpit)“",
+      sub.externalContractReference || "",
+    );
+    if (reference === null) return;
+    try {
+      const updated = await api.setSubscriptionExternalContract(sub.id, reference.trim() || null);
+      replaceSub(updated, reference.trim() ? "Vertragsnachweis gespeichert – die Abrechnung kann jetzt freigegeben werden." : "Vertragsnachweis entfernt");
+    } catch (e: any) { setError(e?.message || "Vertragsnachweis konnte nicht gespeichert werden"); }
+  }
+
+  async function handleBillNow(sub: any) {
+    if (!confirm(
+      `Abrechnung für „${sub.planName}“ (${sub.customerName}) jetzt freigeben?\n\n` +
+      "• Die erste Rechnung wird sofort erstellt und versendet.\n" +
+      "• Der Einzug erfolgt frühestens nach der 14-tägigen Vorabankündigung.\n" +
+      "• Zurückliegende Monate werden nicht automatisch nachberechnet.\n" +
+      "• Danach läuft die Abrechnung monatlich automatisch."
+    )) return;
+    setAuthorizingId(sub.id);
+    try {
+      const updated = await api.billSubscriptionNow(sub.id);
+      replaceSub(updated, "Abrechnung freigegeben – erste Rechnung wurde erstellt.");
+      loadSubs();
+    } catch (e: any) { setError(e?.message || "Abrechnung konnte nicht freigegeben werden"); }
+    finally { setAuthorizingId(null); }
   }
 
   function replaceSub(updated: any, message = "Mandat mit Mollie abgeglichen") {
@@ -496,7 +526,14 @@ export default function SubscriptionsPage() {
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div>{sub.planName}</div>
-                    <div className="mt-1 text-xs text-muted">{sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}` : "Legacy: kein Vertragsnachweis"}</div>
+                    <div className="mt-1 text-xs text-muted">
+                      {sub.contractReference ? `${sub.contractReference} · V${sub.contractVersion}`
+                        : sub.externalContractReference ? <span title={sub.externalContractConfirmedAt ? `bestätigt am ${new Date(sub.externalContractConfirmedAt).toLocaleDateString("de")}${sub.externalContractConfirmedBy ? ` von ${sub.externalContractConfirmedBy}` : ""}` : undefined}>Vertrag extern: {sub.externalContractReference}</span>
+                        : "Legacy: kein Vertragsnachweis"}
+                      {isAdmin && !sub.contractReference && sub.requiresAgencyContract && ["Active", "PendingConfirmation"].includes(sub.status) && (
+                        <button onClick={() => handleExternalContract(sub)} className="ml-2 text-primary hover:underline">{sub.externalContractReference ? "ändern" : "Vertrag liegt extern vor"}</button>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className={`text-xs px-2 py-1 rounded-full ${s(sub.status).cls}`}>{s(sub.status).label}</span>
@@ -513,7 +550,20 @@ export default function SubscriptionsPage() {
                     {sub.billingAuthorizedAt ? (
                       <div><span className="font-medium text-success">Autorisiert</span><div className="mt-1 text-muted">seit {new Date(sub.billingAuthorizedAt).toLocaleDateString("de")}</div></div>
                     ) : (
-                      <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700">Wartet auf Rechnungsstellung</span>
+                      <div>
+                        <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700">Wartet auf Rechnungsstellung</span>
+                        {isAdmin && sub.status === "Active" && sub.mollieMandateStatus === "valid" && (
+                          <div className="mt-2">
+                            {sub.requiresAgencyContract && !sub.contractReference && !sub.externalContractReference ? (
+                              <span className="text-muted">Erst Vertrag hinterlegen</span>
+                            ) : (
+                              <button onClick={() => handleBillNow(sub)} disabled={authorizingId === sub.id} className="px-2 py-1 rounded bg-primary text-white hover:bg-primary-hover disabled:opacity-50">
+                                {authorizingId === sub.id ? "Wird erstellt..." : "Rechnung jetzt senden"}
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs">
