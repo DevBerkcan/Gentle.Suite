@@ -27,6 +27,7 @@ import {
   toPayload,
 } from "./estimateDefaults";
 import { ESTIMATE_PRESETS } from "./estimatePresets";
+import { ClosedYearDocumentNotice } from "@/app/components/FiscalYear";
 
 type PriceMode = "fixed" | "upper" | "middle" | "lower";
 const PRICE_MODES: { value: PriceMode; label: string; hint: string }[] = [
@@ -421,6 +422,7 @@ export default function EstimateEditor({ id }: { id?: string }) {
         </div>
       </div>
 
+      {estimate && <ClosedYearDocumentNotice date={estimate.date} what="Diese Schätzung" />}
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">×</button></div>}
 
       {quoteDialog && (

@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { ClosedYearDocumentNotice } from "@/app/components/FiscalYear";
 import PreisangebotModal from "./PreisangebotModal";
 import AgentImportModal from "./AgentImportModal";
 
@@ -361,6 +362,7 @@ export default function QuoteDetailPage() {
   const isCurrentVersion = quote.isCurrentVersion !== false;
   return (
     <div className="p-8">
+      <ClosedYearDocumentNotice date={quote.createdAt} what="Dieses Angebot" />
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}<button onClick={() => setError("")} className="ml-2 font-bold">x</button></div>}
       {success && <div className="bg-green-50 text-success px-4 py-2 rounded-lg mb-4 text-sm">{success}</div>}
 

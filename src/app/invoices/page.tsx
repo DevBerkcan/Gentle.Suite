@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useFiscalYear, withFiscalYear } from "@/lib/fiscalYear";
+import { ClosedYearListNotice } from "@/app/components/FiscalYear";
 import { api } from "@/lib/api";
 import { useLocalStorage } from "@/hooks/useLocalStorage";
 
@@ -164,6 +166,7 @@ export default function InvoicesPage() {
   const servicePickerRef = useRef<HTMLDivElement>(null);
   const [pickerAnchor, setPickerAnchor] = useState<{ top: number; left: number } | null>(null);
 
+  const { selectedIsClosed } = useFiscalYear();
   const load = (f: InvoiceFilters = filters, p = 1) => {
     const params = filtersToQuery(f);
     // Filter + Seite im URL halten, damit sie einen Reload überstehen.
@@ -174,8 +177,8 @@ export default function InvoicesPage() {
 
     params.set("page", String(p));
     params.set("pageSize", String(pageSize));
-    api
-      .invoices(params.toString())
+    withFiscalYear(params.toString())
+      .then(p => api.invoices(p))
       .then(setData)
       .catch(() => setError("Rechnungen konnten nicht geladen werden"));
   };
@@ -552,15 +555,16 @@ const save = async () => {
           >
             CSV Export
           </a>
-          <button
+          {!selectedIsClosed && <button
             onClick={openModal}
             className="bg-primary text-white px-4 py-2 rounded-lg text-sm hover:opacity-90"
           >
             + Neue Rechnung
-          </button>
+          </button>}
         </div>
       </div>
 
+      <ClosedYearListNotice />
       {error && (
         <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">
           {error}
