@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ListChecks, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
+import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ListChecks, Plug, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { workspaces, type Workspace } from "./workspaces";
 
@@ -52,6 +52,7 @@ const navByWorkspace: Record<Workspace, { home: string; groups: NavGroup[] }> = 
         { href: "/email-templates", label: "E-Mail-Vorlagen", icon: Mail },
         { href: "/emails", label: "E-Mail-Protokoll", icon: Mail },
         { href: "/users", label: "Zugänge", icon: KeyRound },
+        { href: "/integrations", label: "Schnittstellen", icon: Plug },
         { href: "/settings", label: "Einstellungen", icon: Settings },
       ] },
     ],

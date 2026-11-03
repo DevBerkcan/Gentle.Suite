@@ -688,6 +688,10 @@ deleteServiceItem: (id: string) =>
     if (!res.ok) throw new Error(await res.text());
     return res.blob();
   },
+  // Schnittstellen: API-Schlüssel für GentleHub & Co.
+  integrationKeys: () => apiFetch<any[]>("/integration-keys"),
+  createIntegrationKey: (name: string) => apiFetch<any>("/integration-keys", { method: "POST", body: JSON.stringify({ name }) }),
+  revokeIntegrationKey: (id: string) => apiFetch<any>(`/integration-keys/${id}/revoke`, { method: "POST" }),
   // Website-Rechtstexte-Generator (Konfiguration je Kunde)
   websiteLegal: (customerId: string) => apiFetch<any>(`/website-legal/${customerId}`),
   saveWebsiteLegal: (customerId: string, config: any) => apiFetch<any>(`/website-legal/${customerId}`, { method: "PUT", body: JSON.stringify(config) }),
