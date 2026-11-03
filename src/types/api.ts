@@ -434,6 +434,10 @@ export interface CustomerSubscription {
   setupAttemptCount?: number | null;
   /** Fester Abbuchungstag 1–28 (Ausnahme); null = Standard (Einzug zum Periodenbeginn). */
   collectionDayOfMonth?: number | null;
+  /** Vertragsnachweis außerhalb von Gentlesuite (statt unterschriebenem Agenturvertrag). */
+  externalContractReference?: string | null;
+  externalContractConfirmedAt?: string | null;
+  externalContractConfirmedBy?: string | null;
 }
 
 export type MandateMethod = "directdebit" | "creditcard" | "paypal";
