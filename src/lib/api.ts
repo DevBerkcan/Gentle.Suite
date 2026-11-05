@@ -616,6 +616,7 @@ deleteServiceItem: (id: string) =>
   updateOpportunity: (id: string, data: any) => apiFetch<any>(`/opportunities/${id}`, { method: "PUT", body: JSON.stringify(data) }),
   updateOpportunityStage: (id: string, data: any) => apiFetch<any>(`/opportunities/${id}/stage`, { method: "PUT", body: JSON.stringify(data) }),
   opportunityForecast: () => apiFetch<any>("/opportunities/forecast"),
+  subscriptionRenewals: (days = 60) => apiFetch<any[]>(`/subscriptions/renewals?days=${days}`),
   deleteOpportunity: (id: string) => apiFetch<any>(`/opportunities/${id}`, { method: "DELETE" }),
   // Support Tickets
   tickets: (params?: string) => apiFetch<any>(`/tickets${params ? "?" + params : ""}`),
