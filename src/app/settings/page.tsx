@@ -271,6 +271,30 @@ export default function SettingsPage() {
           </div>
         </section>
 
+        {/* E-Mail & Nachfass */}
+        <section className="bg-surface rounded-xl border border-border p-6">
+          <h2 className="font-semibold mb-4">E-Mail &amp; Angebots-Nachfass</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Interne Kopie aller Kundenmails (BCC)</label>
+              <input type="email" placeholder="z. B. buero@gentlegroup.de – leer lassen für keine Kopie" value={form.internalCopyEmail ?? ""} onChange={e => f("internalCopyEmail", e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg" />
+              <p className="text-xs text-muted mt-1">Geht als Blindkopie raus – Kunden sehen diese Adresse nicht.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Nachfass-Aufgabe nach (Tagen)</label>
+              <input type="number" min="1" max="60" value={form.quoteFollowUpDays || 7} onChange={e => f("quoteFollowUpDays", Number(e.target.value))} className="w-full px-3 py-2 border border-border rounded-lg" />
+              <p className="text-xs text-muted mt-1">Für offene Angebote wird einmalig eine Aufgabe „Angebot nachfassen“ beim Ersteller angelegt.</p>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 text-sm font-medium mt-6">
+                <input type="checkbox" checked={!!form.quoteFollowUpEmailToCustomer} onChange={e => f("quoteFollowUpEmailToCustomer", e.target.checked)} />
+                Zusätzlich Erinnerungsmail an den Kunden senden
+              </label>
+              <p className="text-xs text-muted mt-1">Vorlage „quote-reminder“. Nicht bei Kunden mit Mahnstopp.</p>
+            </div>
+          </div>
+        </section>
+
         {/* Vorlagen */}
         <section className="bg-surface rounded-xl border border-border p-6">
           <h2 className="font-semibold mb-4">Dokument-Vorlagen</h2>
