@@ -58,11 +58,18 @@ Mindestens ein Parameter. Liefert eine Liste von Treffern (leer = unbekannt):
   "street": "Hauptstr. 1", "zipCode": "40210", "city": "Düsseldorf", "country": "Deutschland",
   "industry": "Lebensmittel",
   "sourceNote": "Outlook-Anfrage vom 03.11.2026: Website-Relaunch mit Onlineshop",
-  "externalId": "hub-inquiry-8f2a91"
+  "externalId": "hub-inquiry-8f2a91",
+  "inquirySubject": "Website-Relaunch mit Onlineshop",
+  "createOpportunity": true
 }
 ```
 Pflicht: `firstName`, `email`. Ohne `companyName` (Privatperson) wird „Vorname Nachname“ als Kundenname verwendet.
 Alles andere ist optional.
+
+**Pipeline:** Standardmäßig (`createOpportunity` fehlt oder `true`) landet jede Anfrage zusätzlich als Opportunity in
+Phase „Qualifizierung“ (Quelle Inbound, Abschluss in 30 Tagen, Titel = `inquirySubject`, sonst `sourceNote`).
+Mit `externalId` ist das idempotent: dieselbe Anfrage erzeugt nie eine zweite Opportunity. Ist die Person schon
+bekannt (`outcome: existing`), wird nur mit `externalId` eine Opportunity angelegt – ohne ID wären Wiederholungen Dubletten.
 
 Antwort (`201` bei Neuanlage, sonst `200`):
 ```json
@@ -70,7 +77,8 @@ Antwort (`201` bei Neuanlage, sonst `200`):
   "outcome": "created",
   "customerId": "6f1c…", "customerNumber": "KD-2026-00042", "companyName": "Bäckerei Muster GmbH",
   "contactId": "a3d9…", "matchedBy": null,
-  "crmUrl": "https://gentlesuite.vercel.app/customers/6f1c…"
+  "crmUrl": "https://gentlesuite.vercel.app/customers/6f1c…",
+  "opportunityId": "c71e…"
 }
 ```
 
