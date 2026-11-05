@@ -225,7 +225,7 @@ export default function OpportunitiesPage() {
                     <div className="absolute inset-y-0 left-0 bg-primary/20" style={{ width: `${(m.pipeline / maxMonth) * 100}%` }} />
                     <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${(m.weighted / maxMonth) * 100}%` }} />
                   </div>
-                  <span className="tabular-nums text-right whitespace-nowrap"><span className="font-medium">{eur(m.weighted)}</span> <span className="text-xs text-muted">/ {eur(m.pipeline)} · {m.count}</span></span>
+                  <span className="tabular-nums text-right whitespace-nowrap pr-1"><span className="font-medium">{eur(m.weighted)}</span> <span className="hidden md:inline text-xs text-muted">/ {eur(m.pipeline)} · {m.count} {m.count === 1 ? "Deal" : "Deals"}</span></span>
                 </div>
               ))}
             </div>
