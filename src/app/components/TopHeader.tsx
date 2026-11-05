@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { FiscalYearSwitch } from "./FiscalYear";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import NotificationBell from "./NotificationBell";
 import { Sun, Moon, Plus, Receipt, FileText, Wallet, Ruler, ChevronDown, Settings, LogOut, Search, X, Menu } from "lucide-react";
 import { api } from "@/lib/api";
 import { workspaces, type Workspace } from "./workspaces";
@@ -223,6 +224,8 @@ export default function TopHeader({ theme, onToggleTheme, onMenuToggle, workspac
             </div>
           )}
         </div>
+
+        <NotificationBell />
 
         {/* Dark Mode Toggle */}
         <button
