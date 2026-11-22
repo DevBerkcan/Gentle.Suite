@@ -33,7 +33,9 @@ export function ContractAiButton({ customerId, customerName }: { customerId: str
       const q = draft.quoteId ? `quoteId=${draft.quoteId}` : `subscriptionId=${draft.subscriptionId}`;
       router.push(`/contracts/new?${q}&ai=1`);
     } catch (e: any) {
-      setError(e?.message || "Der Vertrags-Agent konnte keinen Vorschlag erstellen.");
+      const msg = String(e?.message || "");
+      setError(/429/.test(msg) ? "Zu viele Anfragen in kurzer Zeit – bitte eine Minute warten und erneut versuchen."
+        : msg || "Der Vertrags-Agent konnte keinen Vorschlag erstellen.");
       setBusy(false);
     }
   }
