@@ -315,6 +315,13 @@ export default function SettingsPage() {
               <label className="block text-sm font-medium mb-1">Rechnungs-Schlusstext</label>
               <textarea rows={2} value={form.invoiceOutroTemplate || ""} onChange={e => f("invoiceOutroTemplate", e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
             </div>
+            <div className="col-span-2">
+              <label className="block text-sm font-medium mb-1">Über uns (erstes Kapitel jedes Angebots)</label>
+              <textarea rows={5} maxLength={4000} value={form.quoteAboutText ?? ""} onChange={e => f("quoteAboutText", e.target.value)}
+                placeholder="Kurz, wer wir sind und was wir machen – erscheint im Angebots-PDF als Kapitel „Über …“. Leer lassen, um das Kapitel wegzulassen."
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+              <p className="text-xs text-muted mt-1">Absätze mit einer Leerzeile trennen.</p>
+            </div>
           </div>
         </section>
 
