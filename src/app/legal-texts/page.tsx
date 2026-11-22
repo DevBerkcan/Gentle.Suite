@@ -77,6 +77,20 @@ export default function LegalTextsPage() {
     }
   }
 
+  async function handleViewPdf(id: string) {
+    try {
+      const blob = await api.legalTextPdfBlob(id);
+      window.open(URL.createObjectURL(blob), "_blank");
+    } catch {
+      setError("PDF konnte nicht erzeugt werden");
+    }
+  }
+
+  const stand = (item: any) => {
+    const d = item.updatedAt || item.createdAt;
+    return d && !String(d).startsWith("0001") ? new Date(d).toLocaleDateString("de-DE") : null;
+  };
+
   const grouped = TYPES.map(t => ({ type: t, items: items.filter(i => i.type === t) }));
 
   return (
@@ -84,7 +98,7 @@ export default function LegalTextsPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Rechtliches</h1>
-          <p className="text-sm text-muted mt-0.5">AGB, Datenschutz und Verträge — als Text oder Datei-Upload, AGB/Datenschutz können automatisch an jedes Angebot angehängt werden</p>
+          <p className="text-sm text-muted mt-0.5">AGB, Datenschutz und Verträge — als Text oder Datei-Upload. AGB als Text werden beim Versand automatisch als eigene PDF (mit Stand-Datum) an Angebote und Verträge angehängt; Änderungen gelten nur für künftig versendete Dokumente.</p>
         </div>
         <button onClick={() => { setEditId(null); setForm({ ...emptyForm }); setShowForm(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">+ Neues Dokument</button>
       </div>
@@ -118,7 +132,16 @@ export default function LegalTextsPage() {
                           <button onClick={() => handleRemoveAttachment(item.id)} className="text-xs text-danger hover:underline shrink-0">entfernen</button>
                         </div>
                       ) : (
-                        <span className="truncate block">{item.content || "–"}</span>
+                        <div>
+                          <span className="truncate block">{item.content || "–"}</span>
+                          {item.content && (
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs">
+                              {stand(item) && <span>Stand {stand(item)}</span>}
+                              <button onClick={() => handleViewPdf(item.id)} className="text-primary hover:underline">Als PDF ansehen</button>
+                              {g.type === "Agb" && item.autoAttachToQuotes && <span className="px-2 py-0.5 rounded-full bg-background border border-border">geht als eigene PDF mit jedem Angebot und Vertrag raus</span>}
+                            </div>
+                          )}
+                        </div>
                       )}
                     </td>
                     <td className="px-4 py-3 text-sm">

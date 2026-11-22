@@ -557,6 +557,13 @@ deleteServiceItem: (id: string) =>
     return normalizeLegalText(await res.json());
   },
   deleteLegalTextAttachment: (id: string) => apiFetch<any>(`/legaltexts/${id}/attachment`, { method: "DELETE" }).then(normalizeLegalText),
+  // Vorschau des PDFs, das für Text-AGB automatisch erzeugt und an Angebote/Verträge angehängt wird
+  legalTextPdfBlob: async (id: string) => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    const res = await fetch(`${API}/api/legaltexts/${id}/pdf`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
+    if (!res.ok) throw new Error(await res.text());
+    return res.blob();
+  },
   legalTextAttachmentBlob: async (id: string) => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     const res = await fetch(`${API}/api/legaltexts/${id}/attachment`, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
