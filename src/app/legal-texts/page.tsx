@@ -98,7 +98,7 @@ export default function LegalTextsPage() {
       <div className="flex justify-between items-center mb-6">
         <div>
           <h1 className="text-2xl font-bold">Rechtliches</h1>
-          <p className="text-sm text-muted mt-0.5">AGB, Datenschutz und Verträge — als Text oder Datei-Upload. AGB als Text werden beim Versand automatisch als eigene PDF (mit Stand-Datum) an Angebote und Verträge angehängt; Änderungen gelten nur für künftig versendete Dokumente.</p>
+          <p className="text-sm text-muted mt-0.5">AGB, Datenschutz und Verträge — als Text oder Datei-Upload. AGB als Text stehen automatisch als letztes Kapitel in jedem Angebot und am Ende jedes Vertrags; Änderungen gelten nur für künftig versendete Dokumente.</p>
         </div>
         <button onClick={() => { setEditId(null); setForm({ ...emptyForm }); setShowForm(true); }} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium">+ Neues Dokument</button>
       </div>
@@ -138,7 +138,7 @@ export default function LegalTextsPage() {
                             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs">
                               {stand(item) && <span>Stand {stand(item)}</span>}
                               <button onClick={() => handleViewPdf(item.id)} className="text-primary hover:underline">Als PDF ansehen</button>
-                              {g.type === "Agb" && item.autoAttachToQuotes && <span className="px-2 py-0.5 rounded-full bg-background border border-border">geht als eigene PDF mit jedem Angebot und Vertrag raus</span>}
+                              {g.type === "Agb" && item.autoAttachToQuotes && <span className="px-2 py-0.5 rounded-full bg-background border border-border">steht am Ende jedes Angebots und Vertrags</span>}
                             </div>
                           )}
                         </div>
