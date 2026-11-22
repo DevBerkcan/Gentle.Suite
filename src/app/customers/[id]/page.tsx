@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { Trash2 } from "lucide-react";
+import { ContractAiButton } from "@/components/ContractAiButton";
 
 type Tab = "overview" | "contacts" | "notes" | "onboarding" | "activity" | "pricelists" | "opportunities" | "tickets" | "crmactivities" | "documents";
 
@@ -343,6 +344,7 @@ export default function CustomerDetailPage() {
           </div>
           <p className="text-sm text-muted">{customer.customerNumber}{customer.industry ? ` · ${customer.industry}` : ""}</p>
         </div>
+        <ContractAiButton customerId={customer.id} customerName={customer.companyName} />
         <button onClick={startEditing} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Bearbeiten</button>
         <button onClick={handleToggleReminderStop} className={`px-4 py-2 border rounded-lg text-sm font-medium ${reminderStop ? "border-warning text-warning hover:bg-yellow-50" : "border-border hover:bg-background"}`}>{reminderStop ? "Mahnstopp aktiv" : "Mahnstopp"}</button>
         <button onClick={handleGdprExport} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">GDPR Export</button>

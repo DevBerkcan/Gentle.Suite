@@ -1,7 +1,9 @@
 "use client";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { api } from "@/lib/api";
+import { api, type ContractAiDraft } from "@/lib/api";
+import { Sparkles } from "lucide-react";
+import { CONTRACT_AI_DRAFT_KEY } from "@/components/ContractAiButton";
 
 const CATEGORY_LABELS: Record<string, string> = {
   webseiten: "Webseiten",
@@ -38,6 +40,8 @@ function ContractWizard() {
 
   const [schnellstartTemplateId, setSchnellstartTemplateId] = useState("");
   const [leistungsBlockKeys, setLeistungsBlockKeys] = useState<string[]>([]);
+  const [leistungsbeschreibung, setLeistungsbeschreibung] = useState("");
+  const [aiDraft, setAiDraft] = useState<(ContractAiDraft & { wish?: string }) | null>(null);
 
   useEffect(() => {
     if (!quoteId && !subscriptionId) { setLoadError("Kein Angebot oder Abonnement angegeben."); return; }
@@ -50,6 +54,28 @@ function ContractWizard() {
       setVerguetungBetrag(p.suggestedBetrag);
       setTemplates((tpl || []).filter((t: any) => t.isActive));
       setBlocks((bl || []).filter((b: any) => b.isActive));
+      // Vorschlag des Vertrags-Agenten (von der Kundenseite) übernehmen – nur für genau diese Grundlage und nur einmal.
+      try {
+        const raw = sessionStorage.getItem(CONTRACT_AI_DRAFT_KEY);
+        if (raw) {
+          sessionStorage.removeItem(CONTRACT_AI_DRAFT_KEY);
+          const d = JSON.parse(raw);
+          const fresh = Date.now() - (d.createdAt || 0) < 30 * 60 * 1000;
+          if (fresh && ((quoteId && d.quoteId === quoteId) || (subscriptionId && d.subscriptionId === subscriptionId))) {
+            setAiDraft(d);
+            setVerguetungBetrag(d.verguetungBetrag);
+            setVerguetungAnmerkung(d.verguetungAnmerkung || "");
+            setZahlungsfristTage(d.zahlungsfristTage ?? 14);
+            setHatFesteLaufzeit(!!d.hatFesteLaufzeit);
+            if (d.laufzeitMonate) setLaufzeitMonate(d.laufzeitMonate);
+            if (d.kuendigungsfristMonate != null) setKuendigungsfristMonate(d.kuendigungsfristMonate);
+            setOptionaleKlauselKeys(d.optionaleKlauselKeys || []);
+            setSchnellstartTemplateId(d.schnellstartTemplateId || "");
+            setLeistungsBlockKeys(d.leistungsBlockKeys || []);
+            setLeistungsbeschreibung(d.leistungsbeschreibung || "");
+          }
+        }
+      } catch { /* kein Vorschlag */ }
     }).catch(() => setLoadError("Daten konnten nicht geladen werden."));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,6 +109,7 @@ function ContractWizard() {
         optionaleKlauselKeys,
         leistungsBlockKeys,
         schnellstartTemplateId: schnellstartTemplateId || null,
+        leistungsbeschreibung: leistungsbeschreibung.trim() || null,
       });
       router.push(`/contracts/${contract.id}`);
     } catch (e: any) {
@@ -128,6 +155,23 @@ function ContractWizard() {
       </div>
 
       {error && <div className="bg-red-50 text-danger px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>}
+
+      {aiDraft && (
+        <div className="bg-navy text-white rounded-xl p-4 mb-6 text-sm">
+          <p className="font-semibold flex items-center gap-2"><Sparkles className="w-4 h-4 text-accent" />Vom Vertrags-Agenten vorausgefüllt – bitte alles prüfen</p>
+          {aiDraft.wish && <p className="text-white/70 mt-1">„{aiDraft.wish}“</p>}
+          <p className="mt-2 text-white/90">
+            {aiDraft.templateName ? <>Vorlage <b>{aiDraft.templateName}</b></> : "Keine Vorlage erkannt"}
+            {aiDraft.basisLabel ? <> · Grundlage <b>{aiDraft.basisLabel}</b></> : null}
+          </p>
+          {aiDraft.begruendung && <p className="mt-1 text-white/70">{aiDraft.begruendung}</p>}
+          {aiDraft.hinweise?.length > 0 && (
+            <ul className="mt-2 space-y-1">
+              {aiDraft.hinweise.map((h, i) => <li key={i} className="flex gap-2"><span className="text-accent">•</span><span>{h}</span></li>)}
+            </ul>
+          )}
+        </div>
+      )}
 
       <div className="flex items-center gap-2 mb-6 text-xs">
         <span className={`px-2 py-1 rounded-full ${step === 1 ? "bg-primary text-white" : "bg-gray-100 text-muted"}`}>1. Rahmenbedingungen</span>
@@ -216,6 +260,14 @@ function ContractWizard() {
               </div>
             </div>
           ))}
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Leistungsbeschreibung für dieses Projekt (optional)</label>
+            <textarea value={leistungsbeschreibung} onChange={e => setLeistungsbeschreibung(e.target.value)} rows={aiDraft ? 9 : 4} maxLength={6000}
+              placeholder="Konkreter Umfang dieses Projekts – erscheint im Vertrag als eigener Abschnitt „Leistungsbeschreibung“ vor den Leistungsbausteinen."
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+            {aiDraft?.leistungsbeschreibung && <p className="text-xs text-muted mt-1">Von der KI formuliert – bitte inhaltlich prüfen und bei Bedarf anpassen.</p>}
+          </div>
 
           <div className="flex justify-between pt-2">
             <button onClick={() => setStep(1)} className="px-4 py-2 border border-border rounded-lg text-sm font-medium hover:bg-background">Zurück</button>
