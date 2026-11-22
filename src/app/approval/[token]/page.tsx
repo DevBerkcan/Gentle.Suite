@@ -515,8 +515,8 @@ export default function ApprovalPage() {
               {quote!.legalTextBlockOptions!.map((lt: any) => (
                 <div key={lt.key} className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 border-b border-[#DADDE8] px-1 py-3 text-sm">
                   <span className="text-[#1B2140] font-medium">{lt.title}</span>
-                  {lt.attachmentFileName ? (
-                    <a href={`${API}/api/approval/${token}/legal/${lt.key}`} target="_blank" rel="noopener noreferrer" className={`text-[#010A30] font-semibold underline decoration-[#DADDE8] underline-offset-4 hover:decoration-[#010A30] text-xs shrink-0 break-all rounded-[2px] ${FOCUS}`}>{lt.attachmentFileName} herunterladen</a>
+                  {lt.attachmentFileName || (lt.type === "Agb" && lt.content) ? (
+                    <a href={`${API}/api/approval/${token}/legal/${lt.key}`} target="_blank" rel="noopener noreferrer" className={`text-[#010A30] font-semibold underline decoration-[#DADDE8] underline-offset-4 hover:decoration-[#010A30] text-xs shrink-0 break-all rounded-[2px] ${FOCUS}`}>{lt.attachmentFileName || "AGB als PDF"} herunterladen</a>
                   ) : (
                     <span className="text-[#5B6180] text-xs shrink-0">siehe Angebots-PDF</span>
                   )}
