@@ -674,6 +674,9 @@ deleteServiceItem: (id: string) =>
     return apiFetch<any>(`/agencycontracts/party-preview?${qs}`);
   },
   generateAgencyContract: (data: any) => apiFetch<any>("/agencycontracts/from-wizard", { method: "POST", body: JSON.stringify(data) }),
+  // Vertrags-Agent (KI): nur Vorschlag, gespeichert wird erst über generateAgencyContract
+  contractAiStatus: () => apiFetch<{ enabled: boolean; model: string | null; runsThisMonth: number; monthlyLimit: number }>("/contract-ai/status"),
+  contractAiDraft: (data: { customerId: string; beschreibung: string }) => apiFetch<ContractAiDraft>("/contract-ai/draft", { method: "POST", body: JSON.stringify(data) }),
   updateAgencyContractSections: (id: string, sections: any[]) => apiFetch<any>(`/agencycontracts/${id}/sections`, { method: "PUT", body: JSON.stringify({ sections }) }),
   signAndSendAgencyContract: (id: string) => apiFetch<any>(`/agencycontracts/${id}/sign-and-send`, { method: "POST" }),
   // Contract Clause Blocks (Leistungsbausteine)
@@ -732,3 +735,12 @@ deleteServiceItem: (id: string) =>
     return { blob: await res.blob(), fileName: m ? decodeURIComponent(m[1]) : `Aufwandsschaetzung_${id}.pdf` };
   },
 };
+
+export interface ContractAiDraft {
+  quoteId: string | null; subscriptionId: string | null; basisLabel: string | null;
+  schnellstartTemplateId: string | null; templateName: string | null;
+  leistungsBlockKeys: string[]; optionaleKlauselKeys: string[];
+  verguetungBetrag: number; verguetungAnmerkung: string | null; zahlungsfristTage: number;
+  hatFesteLaufzeit: boolean; laufzeitMonate: number | null; kuendigungsfristMonate: number | null;
+  leistungsbeschreibung: string | null; begruendung: string | null; hinweise: string[]; model: string;
+}
