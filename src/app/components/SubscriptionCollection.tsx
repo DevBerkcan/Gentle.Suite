@@ -336,6 +336,18 @@ export function NextCollection({ sub, fallbackDate }: { sub: CustomerSubscriptio
       </div>
     );
   }
+  if (sub.nextCollectionDate && isTransfer(sub)) {
+    return (
+      <div className="text-xs leading-relaxed">
+        <p className="whitespace-nowrap text-sm text-text">
+          Rechnung am <span className="font-semibold tabular-nums">{formatDate(sub.nextCollectionDate)}</span>
+        </p>
+        <p className="whitespace-nowrap text-muted">
+          {sub.nextCollectionAmount != null && <span className="tabular-nums">{formatMoney(sub.nextCollectionAmount)}</span>} · per Überweisung
+        </p>
+      </div>
+    );
+  }
   if (sub.nextCollectionDate) {
     return (
       <div className="text-xs leading-relaxed" title={BANK_HINT}>
@@ -368,7 +380,7 @@ export function CollectionDaySetting({ sub, onUpdated, onError }: { sub: Custome
   const [value, setValue] = useState(current == null ? "" : String(current));
   const [saving, setSaving] = useState(false);
 
-  if (!isAdmin) return null;
+  if (!isAdmin || isTransfer(sub)) return null; // Überweisung: kein Einzug, also kein Abbuchungstag
 
   async function save() {
     if (saving) return;
@@ -459,10 +471,64 @@ export function SetupAttemptHint({ sub }: { sub: CustomerSubscription }) {
   );
 }
 
-export function MandateInfo({ sub, isAdmin, onUpdated, onError }: { sub: CustomerSubscription; isAdmin: boolean; onUpdated: (s: CustomerSubscription) => void; onError?: (msg: string) => void }) {
+export const isTransfer = (sub: Pick<CustomerSubscription, "paymentMethod">) => sub.paymentMethod === "Transfer";
+
+const ENDED = ["Cancelled", "Expired", "Completed"];
+
+/** Zahlungsart je Abo: Mollie-Einzug oder nur Rechnungsversand (Kunde überweist). Nur Admins können umstellen. */
+export function PaymentMethodSwitch({ sub, isAdmin, onUpdated, onError }: { sub: CustomerSubscription; isAdmin: boolean; onUpdated: (s: CustomerSubscription, message?: string) => void; onError?: (msg: string) => void }) {
+  const [saving, setSaving] = useState(false);
+  const current = isTransfer(sub) ? "Transfer" : "Mollie";
+  if (!isAdmin || ENDED.includes(sub.status)) return null;
+
+  async function change(next: "Mollie" | "Transfer") {
+    if (next === current || saving) return;
+    const msg = next === "Transfer"
+      ? "Auf „Nur Rechnung“ umstellen?\n\nAb sofort wird jede Rechnung nur noch per E-Mail verschickt und der Kunde überweist selbst. Noch nicht gestartete Mollie-Einzüge dieses Abos werden gestoppt."
+      : "Auf „Mollie-Einzug“ umstellen?\n\nKünftige Rechnungen werden automatisch eingezogen, sobald ein gültiges Mandat vorliegt. Bereits versendete Überweisungs-Rechnungen bleiben zur Überweisung offen.";
+    if (!confirm(msg)) return;
+    setSaving(true);
+    try {
+      onUpdated(await api.setSubscriptionPaymentMethod(sub.id, next), next === "Transfer" ? "Zahlungsart: nur Rechnung (Kunde überweist)" : "Zahlungsart: Mollie-Einzug");
+    } catch (e: any) {
+      onError?.(e?.message || "Zahlungsart konnte nicht geändert werden");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="inline-flex rounded-full border border-border bg-surface p-0.5 text-xs" role="group" aria-label="Zahlungsart">
+      {(["Mollie", "Transfer"] as const).map(m => (
+        <button
+          key={m}
+          type="button"
+          onClick={() => change(m)}
+          disabled={saving}
+          aria-pressed={current === m}
+          className={`whitespace-nowrap rounded-full px-2.5 py-0.5 font-medium transition-colors disabled:opacity-50 ${current === m ? "bg-navy text-white" : "text-muted hover:text-text"}`}
+        >
+          {m === "Mollie" ? "Mollie-Einzug" : "Nur Rechnung"}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function MandateInfo({ sub, isAdmin, onUpdated, onError }: { sub: CustomerSubscription; isAdmin: boolean; onUpdated: (s: CustomerSubscription, message?: string) => void; onError?: (msg: string) => void }) {
   const [checking, setChecking] = useState(false);
   const label = mandateLabel(sub.mandateMethod, sub.mandateAccountLast4);
   const Icon = sub.mandateMethod === "creditcard" ? CreditCard : sub.mandateMethod === "paypal" ? Wallet : Landmark;
+
+  if (isTransfer(sub)) {
+    return (
+      <div className="space-y-1.5 text-xs">
+        <PaymentMethodSwitch sub={sub} isAdmin={isAdmin} onUpdated={onUpdated} onError={onError} />
+        <p className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-text"><Landmark className="h-4 w-4 text-secondary" aria-hidden="true" />Überweisung</p>
+        <p className="max-w-56 text-muted">Rechnung wird automatisch per E-Mail versendet, der Kunde überweist selbst.</p>
+      </div>
+    );
+  }
 
   async function check() {
     setChecking(true);
@@ -477,6 +543,7 @@ export function MandateInfo({ sub, isAdmin, onUpdated, onError }: { sub: Custome
 
   return (
     <div className="space-y-1.5 text-xs">
+      <PaymentMethodSwitch sub={sub} isAdmin={isAdmin} onUpdated={onUpdated} onError={onError} />
       {label ? (
         <p className="inline-flex items-center gap-1.5 whitespace-nowrap text-sm font-medium text-text"><Icon className="h-4 w-4 text-secondary" aria-hidden="true" />{label}</p>
       ) : (

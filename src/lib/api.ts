@@ -466,6 +466,7 @@ deleteServiceItem: (id: string) =>
   subscriptionInvoiceList: (id: string) => apiFetch<SubscriptionInvoice[]>(`/subscriptions/${id}/invoices`).then((list) => Array.isArray(list) ? list : []),
   rescheduleCollection: (invoiceId: string, data: RescheduleCollectionRequest) => apiFetch<SubscriptionInvoice>(`/invoices/${invoiceId}/collection-date`, { method: "POST", body: JSON.stringify(data) }),
   setSubscriptionExternalContract: (id: string, reference: string | null) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/external-contract`, { method: "PUT", body: JSON.stringify({ reference }) }).then(normalizeSubscription),
+  setSubscriptionPaymentMethod: (id: string, paymentMethod: "Mollie" | "Transfer") => apiFetch<CustomerSubscription>(`/subscriptions/${id}/payment-method`, { method: "PUT", body: JSON.stringify({ paymentMethod }) }).then(normalizeSubscription),
   setSubscriptionCollectionDay: (id: string, data: SetCollectionDayRequest) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/collection-day`, { method: "PUT", body: JSON.stringify(data) }).then(normalizeSubscription),
   checkSubscriptionMandate: (id: string) => apiFetch<CustomerSubscription>(`/subscriptions/${id}/mandate/check`, { method: "POST" }).then(normalizeSubscription),
   paymentMonitoring: (signal?: AbortSignal) => apiFetch<PaymentMonitoring>("/monitoring/payments", { signal, cache: "no-store" }),
