@@ -3,7 +3,7 @@ import { useEffect, useState, Fragment } from "react";
 import { api } from "@/lib/api";
 import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHistory";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
-import { CollectionDaySetting, ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable } from "@/app/components/SubscriptionCollection";
+import { CollectionDaySetting, ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, isTransfer } from "@/app/components/SubscriptionCollection";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -552,7 +552,7 @@ export default function SubscriptionsPage() {
                     ) : (
                       <div>
                         <span className="text-xs px-2 py-1 rounded-full bg-orange-50 text-orange-700">Wartet auf Rechnungsstellung</span>
-                        {isAdmin && sub.status === "Active" && sub.mollieMandateStatus === "valid" && (
+                        {isAdmin && sub.status === "Active" && (sub.mollieMandateStatus === "valid" || isTransfer(sub)) && (
                           <div className="mt-2">
                             {sub.requiresAgencyContract && !sub.contractReference && !sub.externalContractReference ? (
                               <span className="text-muted">Erst Vertrag hinterlegen</span>
@@ -567,7 +567,9 @@ export default function SubscriptionsPage() {
                     )}
                   </td>
                   <td className="px-4 py-3 text-xs">
-                    {sub.mandateEmailStatus === "Sent" ? (
+                    {isTransfer(sub) ? (
+                      <span className="text-muted whitespace-nowrap">Nicht nötig (Überweisung)</span>
+                    ) : sub.mandateEmailStatus === "Sent" ? (
                       <div className="whitespace-nowrap"><span className="font-medium text-success">Gesendet</span><div className="mt-1 text-muted">{sub.mandateEmailRecipient}<br />{sub.mandateEmailSentAt ? new Date(sub.mandateEmailSentAt).toLocaleString("de-DE") : ""}</div></div>
                     ) : sub.mandateEmailStatus === "Failed" ? (
                       <div><span className="font-medium text-danger">Fehlgeschlagen</span><div className="mt-1 max-w-64 text-muted" title={sub.mandateEmailLastError || ""}>{sub.mandateEmailLastError || "Erneut senden"}</div></div>
@@ -583,7 +585,7 @@ export default function SubscriptionsPage() {
                   <td className="px-4 py-3 text-right font-medium whitespace-nowrap">{sub.monthlyPrice?.toFixed(2)} EUR</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2 flex-wrap">
-                      {sub.status === "PendingConfirmation" && (
+                      {sub.status === "PendingConfirmation" && !isTransfer(sub) && (
                         <button disabled={sendingMandateId === sub.id} onClick={() => handleMandateEmail(sub.id)} className="text-xs bg-green-600 text-white px-2 py-1 rounded hover:bg-green-700 disabled:opacity-50">
                           {sendingMandateId === sub.id ? "Wird gesendet..." : sub.mandateEmailStatus === "Sent" ? "E-Mail erneut senden" : "Einrichtungs-E-Mail senden"}
                         </button>

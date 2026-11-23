@@ -6,7 +6,7 @@ import SubscriptionPaymentHistory from "@/app/components/SubscriptionPaymentHist
 import ManualInstallmentModal from "./ManualInstallmentModal";
 import BillingCalendarModal from "@/app/components/BillingCalendarModal";
 import InfoPopover from "@/app/components/InfoPopover";
-import { CollectionDaySetting, ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, useIsAdmin } from "@/app/components/SubscriptionCollection";
+import { CollectionDaySetting, ExpandChevron, MandateInfo, NextCollection, SubscriptionInvoicesTable, isTransfer, useIsAdmin } from "@/app/components/SubscriptionCollection";
 
 const statusMap: Record<string, { label: string; cls: string }> = {
   Active: { label: "Aktiv", cls: "bg-green-50 text-success" },
@@ -272,7 +272,7 @@ export default function InstallmentsPage() {
                       <div><span className="font-medium text-success">Rechnung gesendet</span><div className="mt-1 text-muted">seit {new Date(sub.billingAuthorizedAt).toLocaleDateString("de")}</div></div>
                     ) : sub.billingAuthorizedAt ? (
                       <div><span className="font-medium text-text">Freigegeben</span><div className="mt-1 text-muted">Noch keine Rechnung erstellt</div></div>
-                    ) : sub.mollieMandateStatus === "valid" ? (
+                    ) : sub.mollieMandateStatus === "valid" || isTransfer(sub) ? (
                       <button disabled={authorizingId === sub.id} onClick={() => handleBillNow(sub.id)} className="text-xs bg-primary text-white px-2 py-1 rounded hover:bg-primary-hover disabled:opacity-50">
                         {authorizingId === sub.id ? "Wird versendet..." : "Rechnung jetzt senden"}
                       </button>
@@ -284,7 +284,9 @@ export default function InstallmentsPage() {
                     <MandateInfo sub={sub} isAdmin={isAdmin} onUpdated={replaceSub} onError={setError} />
                   </td>
                   <td className="px-4 py-3 text-xs">
-                    {sub.mandateEmailStatus === "Sent" ? (
+                    {isTransfer(sub) ? (
+                      <span className="text-muted">Nicht nötig (Überweisung)</span>
+                    ) : sub.mandateEmailStatus === "Sent" ? (
                       <div><span className="font-medium text-success">Gesendet</span><div className="mt-1 text-muted">{sub.mandateEmailRecipient}</div></div>
                     ) : sub.mandateEmailStatus === "Failed" ? (
                       <div><span className="font-medium text-danger">Fehlgeschlagen</span><div className="mt-1 max-w-48 text-muted" title={sub.mandateEmailLastError || ""}>{sub.mandateEmailLastError || "Erneut senden"}</div></div>

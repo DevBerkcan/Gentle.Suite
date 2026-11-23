@@ -438,6 +438,8 @@ export interface CustomerSubscription {
   externalContractReference?: string | null;
   externalContractConfirmedAt?: string | null;
   externalContractConfirmedBy?: string | null;
+  /** "Mollie" = automatischer Einzug über Mandat; "Transfer" = nur Rechnungsversand, Kunde überweist selbst. */
+  paymentMethod?: SubscriptionPaymentMethod;
 }
 
 export type MandateMethod = "directdebit" | "creditcard" | "paypal";
@@ -466,6 +468,8 @@ export interface SubscriptionInvoice {
 export interface SetCollectionDayRequest {
   day: number | null;
 }
+
+export type SubscriptionPaymentMethod = "Mollie" | "Transfer";
 
 /** POST /api/invoices/{id}/collection-date (Admin) */
 export interface RescheduleCollectionRequest {
