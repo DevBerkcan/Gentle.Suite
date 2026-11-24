@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Activity, ArrowUpRight, CheckCircle2, Clock3, RefreshCw, AlertCircle, Repeat2, Wallet } from "lucide-react";
+import { Activity, ArrowUpRight, CalendarClock, CheckCircle2, Clock3, RefreshCw, AlertCircle, Repeat2, Wallet } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { api } from "@/lib/api";
 import type { BillingOverview, DashboardOverview } from "@/types/dashboard";
@@ -52,6 +52,7 @@ export default function DashboardPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState("");
   const [monitoring, setMonitoring] = useState<PaymentMonitoring | null>(null);
+  const [renewals, setRenewals] = useState<any[] | null>(null);
   const request = useRef<AbortController | null>(null);
 
   const loadData = useCallback(async () => {
@@ -61,6 +62,7 @@ export default function DashboardPage() {
     setRefreshing(true);
     // Zahlungs-Monitoring nur als Hinweis-Banner, unabhängig vom Dashboard-Abruf; Fehler (z. B. Endpunkt noch nicht deployed) ignorieren
     api.paymentMonitoring(controller.signal).then(setMonitoring).catch(() => {});
+    api.subscriptionRenewals(60).then(setRenewals).catch(() => {});
     try {
       const result = await api.dashboardOverview(controller.signal);
       if (!controller.signal.aborted) { setData(result); setError(""); }
@@ -115,6 +117,13 @@ export default function DashboardPage() {
         <Metric label="Verbleibende Ratenbeträge" value={money(data.installments.remainingNet)} hint="Vertragsrest netto · inkl. noch nicht fakturierter Raten" href="/installments" />
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-5"><BillingPanel title="Serienrechnungen" summary={data.recurring} /><BillingPanel title="Ratenzahlungen" summary={data.installments} installment /></div>
+      {renewals && <section className="rounded-2xl border border-border bg-surface overflow-hidden">
+        <div className="p-5 border-b border-border flex flex-wrap justify-between items-start gap-3"><div><h2 className="font-semibold flex items-center gap-2"><CalendarClock size={18} className="text-muted" aria-hidden="true" />Verlängerungen &amp; Vertragsenden</h2><p className="text-xs text-muted mt-1">Nächste 60 Tage · Laufzeitende rechnerisch aus Start + Laufzeit · Gelegenheit für Gespräch, Upgrade oder Rückgewinnung</p></div><Link href="/subscriptions" className="text-xs text-primary hover:underline">Serienrechnungen ↗</Link></div>
+        {renewals.length === 0 ? <p className="p-8 text-center text-sm text-muted">In den nächsten 60 Tagen endet oder verlängert sich kein Vertrag.</p> : <div className="divide-y divide-border">{renewals.map(r => <Link key={`${r.subscriptionId}-${r.kind}`} href={`/customers/${r.customerId}`} className="flex items-center justify-between gap-3 px-5 py-3.5 hover:bg-background transition-colors">
+          <div className="min-w-0"><p className="text-sm font-medium truncate">{r.customerName}</p><p className="text-xs text-muted mt-1 truncate">{r.planName} · {r.kind === "ending" ? (r.status === "Cancelled" ? "gekündigt, endet" : "endet") : `Laufzeitende (${r.termMonths} Mon.)`} am {date(r.date)}</p></div>
+          <div className="text-right shrink-0"><p className={`text-sm font-semibold ${r.kind === "ending" ? "text-danger" : r.daysLeft <= 14 ? "text-warning" : ""}`}>in {r.daysLeft} {r.daysLeft === 1 ? "Tag" : "Tagen"}</p><p className="text-xs text-muted mt-1 tabular-nums">{money(r.monthlyNet)} / Monat</p></div>
+        </Link>)}</div>}
+      </section>}
       <section className="rounded-2xl border border-border bg-surface p-5">
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
           <div><p className="text-xs text-muted">SEPA-Einzüge geplant</p><p className="font-semibold text-xl mt-1 tabular-nums">{data.scheduledCollections} <span className="text-sm font-normal text-muted">· {money(data.scheduledAmount)}</span></p></div>

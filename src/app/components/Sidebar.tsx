@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { LayoutDashboard, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ListChecks, Plug, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
+import { LayoutDashboard, CalendarCheck, Users, UsersRound, FileText, Receipt, Wallet, Calculator, RefreshCw, Settings, PackageOpen, Mail, BookOpen, Scale, ClipboardCheck, Contact, Package, KeyRound, TrendingUp, LifeBuoy, Tag, Archive, CalendarClock, FileSignature, FileStack, Ruler, ListChecks, Plug, ChevronsLeft, ChevronsRight, Activity } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { workspaces, type Workspace } from "./workspaces";
 
@@ -15,6 +15,7 @@ const navByWorkspace: Record<Workspace, { home: string; groups: NavGroup[] }> = 
     groups: [
       { items: [
         { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+        { href: "/my-week", label: "Meine Woche", icon: CalendarCheck },
         { href: "/customers", label: "Kunden", icon: Users },
         { href: "/contacts", label: "Kontakte", icon: Contact },
         { href: "/opportunities", label: "Opportunities", icon: TrendingUp },

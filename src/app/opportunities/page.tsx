@@ -26,6 +26,10 @@ const STAGE_HEADER: Record<string, string> = {
   ClosedLost: "border-t-red-400",
 };
 
+const MONTHS = ["Jan", "Feb", "Mär", "Apr", "Mai", "Jun", "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"];
+const LOST_PRESETS = ["Preis zu hoch", "Anderer Anbieter", "Kein Budget", "Projekt verschoben", "Keine Rückmeldung", "Passt nicht zu uns"];
+const eur = (v: number, digits = 0) => `${Number(v || 0).toLocaleString("de-DE", { minimumFractionDigits: digits, maximumFractionDigits: digits })} €`;
+
 const defaultForm = { customerId: "", title: "", stage: "Qualification", probability: 10, expectedRevenue: 0, closeDate: "", notes: "" };
 
 export default function OpportunitiesPage() {
@@ -39,11 +43,16 @@ export default function OpportunitiesPage() {
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [forecast, setForecast] = useState<any>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overStage, setOverStage] = useState<string | null>(null);
+  const [lostDialog, setLostDialog] = useState<{ id: string; title: string; reason: string } | null>(null);
 
   const load = () => {
     const params = new URLSearchParams();
     if (stageFilter) params.set("stage", stageFilter);
     api.opportunities(params.toString()).then(setItems).catch(() => setError("Fehler beim Laden"));
+    api.opportunityForecast().then(setForecast).catch(() => {});
   };
 
   useEffect(() => {
@@ -63,8 +72,19 @@ export default function OpportunitiesPage() {
     } catch { setError("Fehler beim Anlegen"); }
   }
 
-  async function handleStageChange(id: string, stage: string) {
-    try { await api.updateOpportunityStage(id, { stage }); load(); } catch { setError("Fehler beim Verschieben"); }
+  async function handleStageChange(id: string, stage: string, lostReason?: string) {
+    const current = items.find(o => o.id === id);
+    if (!current || current.stage === stage) return;
+    // Verloren braucht einen Grund – erst nachfragen, dann speichern.
+    if (stage === "ClosedLost" && !lostReason) { setLostDialog({ id, title: current.title, reason: "" }); return; }
+    setItems(prev => prev.map(o => o.id === id ? { ...o, stage } : o)); // sofort verschieben, Server bestätigt
+    try { await api.updateOpportunityStage(id, { stage, lostReason }); load(); }
+    catch (e: any) { setError(e?.message || "Fehler beim Verschieben"); load(); }
+  }
+
+  function onDrop(stage: string) {
+    if (dragId) void handleStageChange(dragId, stage);
+    setDragId(null); setOverStage(null);
   }
 
   async function handleDelete(id: string, title: string) {
@@ -72,7 +92,11 @@ export default function OpportunitiesPage() {
     try { await api.deleteOpportunity(id); load(); } catch { setError("Fehler beim Löschen"); }
   }
 
-  const totalValue = filtered.filter(o => !["ClosedLost"].includes(o.stage)).reduce((s: number, o: any) => s + (o.expectedRevenue || 0), 0);
+  const openItems = filtered.filter(o => !["ClosedWon", "ClosedLost"].includes(o.stage));
+  const totalValue = openItems.reduce((s: number, o: any) => s + (o.expectedRevenue || 0), 0);
+  const weightedValue = openItems.reduce((s: number, o: any) => s + (o.expectedRevenue || 0) * (o.probability || 0) / 100, 0);
+  const maxMonth = Math.max(1, ...(forecast?.months || []).map((m: any) => m.pipeline));
+  const closedCount = (forecast?.wonLast12Months || 0) + (forecast?.lostLast12Months || 0);
 
   return (
     <div className="p-8">
@@ -80,7 +104,7 @@ export default function OpportunitiesPage() {
       <div className="flex justify-between items-center mb-5">
         <div>
           <h1 className="text-2xl font-bold">Opportunities</h1>
-          <p className="text-sm text-muted mt-0.5">Pipeline-Wert: {totalValue.toLocaleString("de-DE", { minimumFractionDigits: 2 })} €</p>
+          <p className="text-sm text-muted mt-0.5">Offene Pipeline: {eur(totalValue)} · <span className="font-medium text-text" title="Summe aus Wert × Wahrscheinlichkeit aller offenen Opportunities">gewichtet {eur(weightedValue)}</span></p>
         </div>
         <div className="flex items-center gap-3">
           <input placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} className="px-3 py-1.5 border border-border rounded-lg text-sm w-44" />
@@ -109,7 +133,11 @@ export default function OpportunitiesPage() {
             const cols = filtered.filter(o => o.stage === stage);
             const colValue = cols.reduce((s: number, o: any) => s + (o.expectedRevenue || 0), 0);
             return (
-              <div key={stage} className={`flex-shrink-0 w-64 bg-surface border border-border rounded-xl border-t-4 ${STAGE_HEADER[stage]}`}>
+              <div key={stage}
+                onDragOver={e => { if (dragId) { e.preventDefault(); setOverStage(stage); } }}
+                onDragLeave={() => setOverStage(s => s === stage ? null : s)}
+                onDrop={e => { e.preventDefault(); onDrop(stage); }}
+                className={`flex-shrink-0 w-64 bg-surface border rounded-xl border-t-4 transition-colors ${STAGE_HEADER[stage]} ${overStage === stage ? "border-primary bg-primary/5" : "border-border"}`}>
                 <div className="p-3 border-b border-border">
                   <div className="flex justify-between items-center">
                     <span className="text-sm font-semibold">{STAGE_LABEL[stage]}</span>
@@ -119,7 +147,8 @@ export default function OpportunitiesPage() {
                 </div>
                 <div className="p-2 space-y-2 min-h-[200px]">
                   {cols.map((o: any) => (
-                    <div key={o.id} className="bg-background border border-border rounded-lg p-3 cursor-pointer hover:border-primary/40 group">
+                    <div key={o.id} draggable onDragStart={e => { setDragId(o.id); e.dataTransfer.effectAllowed = "move"; }} onDragEnd={() => { setDragId(null); setOverStage(null); }}
+                      className={`bg-background border border-border rounded-lg p-3 cursor-grab active:cursor-grabbing hover:border-primary/40 group ${dragId === o.id ? "opacity-50" : ""}`}>
                       <div className="flex justify-between items-start gap-1">
                         <p className="text-sm font-medium leading-tight">{o.title}</p>
                         <button onClick={() => handleDelete(o.id, o.title)} className="opacity-0 group-hover:opacity-100 text-danger text-xs px-1">×</button>
@@ -130,8 +159,9 @@ export default function OpportunitiesPage() {
                         <span className="text-xs text-muted">{o.probability}%</span>
                       </div>
                       {o.closeDate && <p className="text-xs text-muted mt-1">Bis: {new Date(o.closeDate).toLocaleDateString("de-DE")}</p>}
+                      {o.stage === "ClosedLost" && o.lostReason && <p className="text-xs text-danger mt-1">Grund: {o.lostReason}</p>}
                       {/* Stage changer */}
-                      <select value={o.stage} onChange={e => handleStageChange(o.id, e.target.value)} onClick={e => e.stopPropagation()} className="mt-2 w-full text-xs border border-border rounded px-1.5 py-1 bg-surface">
+                      <select aria-label={`Phase von ${o.title}`} value={o.stage} onChange={e => handleStageChange(o.id, e.target.value)} onClick={e => e.stopPropagation()} className="mt-2 w-full text-xs border border-border rounded px-1.5 py-1 bg-surface">
                         {STAGES.map(s => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
                       </select>
                     </div>
@@ -165,6 +195,7 @@ export default function OpportunitiesPage() {
                   <td className="px-4 py-3 text-sm text-muted">{o.customerName}</td>
                   <td className="px-4 py-3">
                     <span className={`text-xs px-2 py-1 rounded-full border font-medium ${STAGE_COLOR[o.stage]}`}>{STAGE_LABEL[o.stage]}</span>
+                    {o.stage === "ClosedLost" && o.lostReason && <p className="text-xs text-muted mt-1">{o.lostReason}</p>}
                   </td>
                   <td className="px-4 py-3 text-sm text-right font-medium">{Number(o.expectedRevenue).toLocaleString("de-DE", { minimumFractionDigits: 2 })} €</td>
                   <td className="px-4 py-3 text-sm text-right text-muted">{o.probability}%</td>
@@ -177,6 +208,68 @@ export default function OpportunitiesPage() {
             </tbody>
           </table>
           {filtered.length === 0 && <div className="p-8 text-center text-muted text-sm">Keine Opportunities gefunden.</div>}
+        </div>
+      )}
+
+      {/* Forecast */}
+      {forecast && (
+        <div className="mt-6 grid grid-cols-1 xl:grid-cols-3 gap-5">
+          <section className="xl:col-span-2 bg-surface border border-border rounded-xl p-5">
+            <h2 className="font-semibold">Forecast nach erwartetem Abschluss</h2>
+            <p className="text-xs text-muted mt-1 mb-4">Offene Opportunities · gewichtet = Wert × Wahrscheinlichkeit · Monat nach Abschlussdatum</p>
+            <div className="space-y-2.5">
+              {forecast.months.map((m: any) => (
+                <div key={`${m.year}-${m.month}`} className="grid grid-cols-[64px_1fr_auto] items-center gap-3 text-sm">
+                  <span className="text-muted">{MONTHS[m.month - 1]} {String(m.year).slice(2)}</span>
+                  <div className="relative h-5 rounded bg-background overflow-hidden" title={`Pipeline ${eur(m.pipeline)} · gewichtet ${eur(m.weighted)}`}>
+                    <div className="absolute inset-y-0 left-0 bg-primary/20" style={{ width: `${(m.pipeline / maxMonth) * 100}%` }} />
+                    <div className="absolute inset-y-0 left-0 bg-primary" style={{ width: `${(m.weighted / maxMonth) * 100}%` }} />
+                  </div>
+                  <span className="tabular-nums text-right whitespace-nowrap pr-1"><span className="font-medium">{eur(m.weighted)}</span> <span className="hidden md:inline text-xs text-muted">/ {eur(m.pipeline)} · {m.count} {m.count === 1 ? "Deal" : "Deals"}</span></span>
+                </div>
+              ))}
+            </div>
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-1 text-xs text-muted">
+              <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary align-middle mr-1" />gewichtet</span>
+              <span><span className="inline-block w-2.5 h-2.5 rounded-sm bg-primary/20 align-middle mr-1" />Pipeline</span>
+              {forecast.overdueCount > 0 && <span className="text-warning">{forecast.overdueCount} mit überschrittenem Abschlussdatum ({eur(forecast.overdueWeighted)} gewichtet) – Datum aktualisieren</span>}
+              {forecast.undatedCount > 0 && <span>{forecast.undatedCount} ohne Abschlussdatum ({eur(forecast.undatedWeighted)} gewichtet)</span>}
+            </div>
+          </section>
+          <section className="bg-surface border border-border rounded-xl p-5">
+            <h2 className="font-semibold">Letzte 12 Monate</h2>
+            <div className="grid grid-cols-3 gap-3 mt-4 text-center">
+              <div><p className="text-xl font-semibold text-success tabular-nums">{forecast.wonLast12Months}</p><p className="text-xs text-muted">gewonnen</p></div>
+              <div><p className="text-xl font-semibold text-danger tabular-nums">{forecast.lostLast12Months}</p><p className="text-xs text-muted">verloren</p></div>
+              <div><p className="text-xl font-semibold tabular-nums">{closedCount ? Math.round(forecast.wonLast12Months / closedCount * 100) : 0} %</p><p className="text-xs text-muted">Abschlussquote</p></div>
+            </div>
+            <p className="text-xs text-muted mt-2 text-center">Gewonnen: {eur(forecast.wonValueLast12Months)}</p>
+            <h3 className="text-sm font-medium mt-5 mb-2">Verlustgründe</h3>
+            {forecast.lostReasons.length === 0 ? <p className="text-xs text-muted">Noch keine verlorenen Opportunities.</p> : (
+              <ul className="space-y-1.5">{forecast.lostReasons.map((r: any) => (
+                <li key={r.reason} className="flex justify-between gap-2 text-sm"><span className="truncate">{r.reason}</span><span className="text-muted tabular-nums whitespace-nowrap">{r.count}× · {eur(r.value)}</span></li>
+              ))}</ul>
+            )}
+          </section>
+        </div>
+      )}
+
+      {/* Verlustgrund */}
+      {lostDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setLostDialog(null)}>
+          <form className="bg-surface rounded-xl p-6 w-full max-w-md" onClick={e => e.stopPropagation()}
+            onSubmit={e => { e.preventDefault(); const d = lostDialog; setLostDialog(null); void handleStageChange(d.id, "ClosedLost", d.reason.trim()); }}>
+            <h2 className="text-lg font-bold">Warum verloren?</h2>
+            <p className="text-sm text-muted mt-1 mb-4">„{lostDialog.title}“ – der Grund fließt in die Auswertung der Verlustgründe ein.</p>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {LOST_PRESETS.map(p => <button type="button" key={p} onClick={() => setLostDialog({ ...lostDialog, reason: p })} className={`text-xs px-2.5 py-1 rounded-full border ${lostDialog.reason === p ? "border-primary bg-primary text-white" : "border-border hover:bg-background"}`}>{p}</button>)}
+            </div>
+            <input autoFocus required maxLength={200} value={lostDialog.reason} onChange={e => setLostDialog({ ...lostDialog, reason: e.target.value })} placeholder="oder eigenen Grund eingeben" className="w-full px-3 py-2 border border-border rounded-lg text-sm" />
+            <div className="flex gap-2 mt-4">
+              <button type="submit" disabled={!lostDialog.reason.trim()} className="px-4 py-2 bg-danger text-white rounded-lg text-sm font-medium disabled:opacity-50">Als verloren markieren</button>
+              <button type="button" onClick={() => setLostDialog(null)} className="px-4 py-2 border border-border rounded-lg text-sm">Abbrechen</button>
+            </div>
+          </form>
         </div>
       )}
 
